@@ -190,7 +190,7 @@ a {
 .nav-logo img {
   height: auto;
   width: 100%;
-  max-height: 52px;
+  max-height: 80px;
   /* Increased max-height while keeping proportions */
   object-fit: contain;
 }
