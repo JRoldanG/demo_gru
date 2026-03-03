@@ -86,7 +86,10 @@ export default function ShoppingCartDrawer() {
                         <button
                             className="button-primary"
                             style={{ width: '100%', marginBottom: '0.75rem' }}
-                            onClick={() => alert('¡Checkout Exitoso! Esto es un Sandbox MOCK.')}
+                            onClick={() => {
+                                setIsCartOpen(false);
+                                window.location.href = '/checkout';
+                            }}
                         >
                             Proceder al Pago
                         </button>
