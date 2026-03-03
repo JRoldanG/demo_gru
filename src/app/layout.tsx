@@ -37,7 +37,7 @@ function Footer() {
         <div>
           <img src="/logo.png" alt="Gruinfacol S.A." style={{ maxWidth: "200px", marginBottom: "var(--space-md)" }} />
           <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", lineHeight: 1.6 }}>
-            Más de 15 años de excelencia e investigación farmacéutica en Colombia. Mejorando la calidad de vida a través de la innovación científica.
+            Más de 27 años de excelencia e investigación farmacéutica en Colombia. Mejorando la calidad de vida a través de la innovación científica.
           </p>
         </div>
 
@@ -80,7 +80,7 @@ export default function RootLayout({
     <html lang="es">
       <head>
         <title>Gruinfacol S.A. | Investigación Farmacéutica Colombiana</title>
-        <meta name="description" content="Gruinfacol S.A. es una empresa colombiana dedicada a la investigación farmacéutica con más de 15 años de experiencia." />
+        <meta name="description" content="Gruinfacol S.A. es una empresa colombiana dedicada a la investigación farmacéutica con más de 27 años de experiencia." />
       </head>
       <body>
         <CartProvider>

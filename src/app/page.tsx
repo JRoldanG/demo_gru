@@ -168,7 +168,7 @@ export default function Home() {
       >
         <div className="container" style={{ position: 'relative', zIndex: 10, maxWidth: "900px" }}>
           <h1 className="kinetic-header">
-            Más de 15 Años de<br />
+            Más de 27 Años de<br />
             <span className="text-gradient-primary">Investigación Farmacéutica.</span>
           </h1>
           <p className="text-sub" style={{ margin: 'var(--space-lg) auto', color: "var(--text-primary)", fontSize: "1.1rem", maxWidth: "100%" }}>
