@@ -4,6 +4,7 @@ import './globals.css';
 import { Beaker, ShoppingBag } from 'lucide-react';
 import { CartProvider, useCart } from '@/context/CartContext';
 import ShoppingCartDrawer from '@/components/ShoppingCart';
+import WhatsAppButton from '@/components/WhatsAppButton';
 
 function Navbar() {
   const { itemCount, setIsCartOpen } = useCart();
@@ -86,6 +87,7 @@ export default function RootLayout({
           <Navbar />
           <ShoppingCartDrawer />
           {children}
+          <WhatsAppButton />
           <Footer />
         </CartProvider>
       </body>
