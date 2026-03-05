@@ -22,7 +22,8 @@ export default function LoginPage() {
             });
 
             if (error) {
-                throw new Error("Correo o contraseña incorrectos.");
+                console.error("Login error:", error);
+                throw new Error(error.message || "Correo o contraseña incorrectos.");
             }
 
             if (data.session) {

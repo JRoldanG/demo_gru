@@ -29,8 +29,8 @@ function Navbar() {
           ) : isAuthenticated && user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid var(--glass-border)', paddingRight: '1rem', marginRight: '0.5rem' }}>
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--trust-blue)' }}>{user.name}</span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user.priceTier ? user.priceTier.replace('_', ' ') : ''}</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--trust-blue)' }}>{user.name || 'Usuario'}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user.priceTier ? user.priceTier.replace('_', ' ') : 'Básico'}</span>
                 {user.isAdmin && (
                   <Link href="/admin" style={{ fontSize: '0.7rem', color: 'var(--accent-teal)', textDecoration: 'underline' }}>Panel Admin</Link>
                 )}

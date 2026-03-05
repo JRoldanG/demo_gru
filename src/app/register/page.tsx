@@ -29,39 +29,27 @@ export default function RegisterPage() {
         setErrorMsg('');
 
         try {
-            // 1. Create Auth Request in Supabase
+            // 1. Create Auth Request in Supabase and pass profile data as metadata
+            // A database trigger will automatically create the public.profile row using this metadata.
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
+                options: {
+                    data: {
+                        name: formData.name,
+                        idType: formData.idType,
+                        idNumber: formData.idNumber,
+                        phone: formData.phone,
+                        address: formData.address,
+                        city: formData.city
+                    }
+                }
             });
 
             if (authError) throw authError;
 
             const userId = authData.user?.id;
             if (!userId) throw new Error("No se pudo obtener el ID del usuario.");
-
-            // 2. Insert Profile Data into public.profiles
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert([
-                    {
-                        id: userId,
-                        name: formData.name,
-                        email: formData.email,
-                        idType: formData.idType,
-                        idNumber: formData.idNumber,
-                        phone: formData.phone,
-                        address: formData.address,
-                        city: formData.city,
-                        priceTier: 'CLIENTE_FINAL',
-                        isAdmin: false
-                    }
-                ]);
-
-            if (profileError) {
-                console.error("Error creating public profile:", profileError);
-                throw new Error("La cuenta fue creada, pero hubo un error guardando tus datos básicos.");
-            }
 
             // 3. Notify Admin by Email
             const response = await fetch('/api/notify-registration', {
