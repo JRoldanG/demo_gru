@@ -26,6 +26,7 @@ export async function POST(req: Request) {
         await transporter.sendMail({
             from: `"Gruinfacol Web" <${process.env.EMAIL_USER}>`,
             to: 'daroga17@yahoo.es',
+            cc: formData.email,
             subject: `Nuevo Pedido Web - ${formData.name}`,
             html: `
         <h2>Nuevo Pedido Recibido</h2>
