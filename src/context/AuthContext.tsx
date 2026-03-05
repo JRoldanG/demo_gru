@@ -14,6 +14,7 @@ export interface UserProfile {
     address: string;
     city: string;
     priceTier: PriceTier;
+    isAdmin?: boolean;
 }
 
 interface AuthContextType {
@@ -32,6 +33,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         setMounted(true);
+
+        // --- Demo Seeding for Admin ---
+        const existingUsers = localStorage.getItem('gru_mock_users');
+        if (!existingUsers) {
+            // Seed default admin account
+            const adminUser = {
+                id: 'admin-001',
+                name: 'Administrador General',
+                email: 'admin@gruinfacol.com',
+                password: 'admin', // Demo password
+                idType: 'CC',
+                idNumber: '0000',
+                phone: '0000',
+                address: 'Sede Central',
+                city: 'Bogota',
+                priceTier: 'ACCIONISTA' as PriceTier,
+                isAdmin: true
+            };
+            localStorage.setItem('gru_mock_users', JSON.stringify([adminUser]));
+        }
+
         // Hydrate from localStorage
         const storedUser = localStorage.getItem('gru_current_user');
         if (storedUser) {

@@ -24,16 +24,10 @@ function Navbar() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid var(--glass-border)', paddingRight: '1rem', marginRight: '0.5rem' }}>
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--trust-blue)' }}>{user.name}</span>
-                <select
-                  value={user.priceTier}
-                  onChange={(e) => updateTier(e.target.value as any)}
-                  style={{ fontSize: '0.7rem', color: 'var(--text-muted)', background: 'transparent', border: '1px solid var(--glass-border)', borderRadius: '4px', outline: 'none', cursor: 'pointer', padding: '0 2px' }}
-                  title="Simulador de Rol"
-                >
-                  <option value="CLIENTE_FINAL">Cliente Final ($)</option>
-                  <option value="ACCIONISTA">Accionista (-20%)</option>
-                  <option value="DROGUISTA">Droguista (-10%)</option>
-                </select>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user.priceTier.replace('_', ' ')}</span>
+                {user.isAdmin && (
+                  <a href="/admin" style={{ fontSize: '0.7rem', color: 'var(--accent-teal)', textDecoration: 'underline' }}>Panel Admin</a>
+                )}
               </div>
               <button onClick={logout} title="Cerrar Sesión" style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
                 <LogOut size={18} />
