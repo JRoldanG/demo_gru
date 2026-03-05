@@ -2,21 +2,34 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth, PriceTier } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabaseClient';
 import { Users, ShieldAlert, ArrowLeft } from 'lucide-react';
 
 export default function AdminDashboard() {
     const { user, isAuthenticated } = useAuth();
     const [usersList, setUsersList] = useState<any[]>([]);
     const [mounted, setMounted] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchUsers = async () => {
+        setIsLoading(true);
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('isAdmin', false) // Only list non-admins
+            .order('name');
+
+        if (data) setUsersList(data);
+        if (error) console.error("Error fetching users:", error);
+        setIsLoading(false);
+    };
 
     useEffect(() => {
         setMounted(true);
-        // Load all simulated users
-        const mockData = localStorage.getItem('gru_mock_users');
-        if (mockData) {
-            setUsersList(JSON.parse(mockData));
+        if (isAuthenticated && user?.isAdmin) {
+            fetchUsers();
         }
-    }, []);
+    }, [isAuthenticated, user]);
 
     if (!mounted) return null;
 
@@ -34,16 +47,26 @@ export default function AdminDashboard() {
         );
     }
 
-    const handleChangeRole = (userId: string, newRole: string) => {
-        const updatedUsers = usersList.map(u => {
-            if (u.id === userId) {
-                return { ...u, priceTier: newRole };
-            }
-            return u;
-        });
-        setUsersList(updatedUsers);
-        localStorage.setItem('gru_mock_users', JSON.stringify(updatedUsers));
-        alert('Lista de precios actualizada para el cliente.');
+    const handleChangeRole = async (userId: string, newRole: string) => {
+        // Optimistic UI Update
+        const previousUsers = [...usersList];
+        setUsersList(usersList.map(u => u.id === userId ? { ...u, priceTier: newRole } : u));
+
+        // Supabase DB Update
+        const { error } = await supabase
+            .from('profiles')
+            .update({ priceTier: newRole })
+            .eq('id', userId);
+
+        if (error) {
+            console.error("Error updating role:", error);
+            // Revert on failure
+            setUsersList(previousUsers);
+            alert("Hubo un error al actualizar la lista de precios de este cliente. Inténtalo de nuevo.");
+        } else {
+            // Success Toast or similar could go here
+            console.log("Tier updated securely in DB.");
+        }
     };
 
     return (
@@ -56,13 +79,18 @@ export default function AdminDashboard() {
                     <h1 className="kinetic-header" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', marginTop: 'var(--space-sm)' }}>
                         Panel de <span className="text-gradient-primary">Administración</span>
                     </h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>Gestiona los clientes y asigna sus listas de precios dinámicas.</p>
+                    <p style={{ color: 'var(--text-secondary)' }}>Gestiona los clientes en línea y asigna sus listas de precios dinámicas de forma segura.</p>
                 </div>
 
                 <div className="glass-panel" style={{ padding: 'var(--space-xl)' }}>
-                    <h2 style={{ fontSize: '1.5rem', color: 'var(--trust-blue)', marginBottom: 'var(--space-lg)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Users size={24} /> Lista de Clientes Registrados
-                    </h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
+                        <h2 style={{ fontSize: '1.5rem', color: 'var(--trust-blue)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Users size={24} /> Lista de Clientes en Supabase
+                        </h2>
+                        <button onClick={fetchUsers} style={{ background: 'none', border: '1px solid var(--trust-blue)', color: 'var(--trust-blue)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                            Recargar Datos
+                        </button>
+                    </div>
 
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -75,7 +103,13 @@ export default function AdminDashboard() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {usersList.filter(u => !u.isAdmin).length === 0 ? (
+                                {isLoading ? (
+                                    <tr>
+                                        <td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: 'var(--trust-blue)' }}>
+                                            Conectando base de datos...
+                                        </td>
+                                    </tr>
+                                ) : usersList.length === 0 ? (
                                     <tr>
                                         <td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                                             Aún no se han registrado clientes en la página web.
@@ -83,7 +117,6 @@ export default function AdminDashboard() {
                                     </tr>
                                 ) : (
                                     usersList.map((client) => {
-                                        if (client.isAdmin) return null; // No list admins
                                         return (
                                             <tr key={client.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
                                                 <td style={{ padding: '1rem 0.5rem', fontWeight: 500, color: 'var(--text-primary)' }}>{client.name}</td>

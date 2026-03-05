@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useAuth, UserProfile } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabaseClient';
 import { ArrowLeft, User, Mail, Lock, Phone, MapPin, CheckCircle } from 'lucide-react';
 
 export default function RegisterPage() {
-    const { login } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -30,39 +29,51 @@ export default function RegisterPage() {
         setErrorMsg('');
 
         try {
-            // Verify if user already exists
-            const usersStr = localStorage.getItem('gru_mock_users') || '[]';
-            const users: any[] = JSON.parse(usersStr);
+            // 1. Create Auth Request in Supabase
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: formData.email,
+                password: formData.password,
+            });
 
-            if (users.find(u => u.email.toLowerCase() === formData.email.toLowerCase())) {
-                throw new Error('El correo electrónico ya está registrado.');
+            if (authError) throw authError;
+
+            const userId = authData.user?.id;
+            if (!userId) throw new Error("No se pudo obtener el ID del usuario.");
+
+            // 2. Insert Profile Data into public.profiles
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .insert([
+                    {
+                        id: userId,
+                        name: formData.name,
+                        email: formData.email,
+                        idType: formData.idType,
+                        idNumber: formData.idNumber,
+                        phone: formData.phone,
+                        address: formData.address,
+                        city: formData.city,
+                        priceTier: 'CLIENTE_FINAL',
+                        isAdmin: false
+                    }
+                ]);
+
+            if (profileError) {
+                console.error("Error creating public profile:", profileError);
+                throw new Error("La cuenta fue creada, pero hubo un error guardando tus datos básicos.");
             }
 
-            // Create new User object
-            const newUser = {
-                id: Date.now().toString(),
-                name: formData.name,
-                email: formData.email,
-                idType: formData.idType,
-                idNumber: formData.idNumber,
-                phone: formData.phone,
-                address: formData.address,
-                city: formData.city,
-                priceTier: 'CLIENTE_FINAL', // Default
-                password: formData.password // Saved only for mock purposes internally
-            };
-
-            // Notify Admin by Email
+            // 3. Notify Admin by Email
             const response = await fetch('/api/notify-registration', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    name: newUser.name,
-                    email: newUser.email,
-                    idType: newUser.idType,
-                    idNumber: newUser.idNumber,
-                    phone: newUser.phone,
-                    role: newUser.priceTier
+                    name: formData.name,
+                    email: formData.email,
+                    idType: formData.idType,
+                    idNumber: formData.idNumber,
+                    phone: formData.phone,
+                    role: 'CLIENTE_FINAL'
                 })
             });
 
@@ -70,15 +81,8 @@ export default function RegisterPage() {
                 console.error("Warning: Could not send email notification to admin");
             }
 
-            // Save new user to pseudo DB
-            users.push(newUser);
-            localStorage.setItem('gru_mock_users', JSON.stringify(users));
-
-            // Log user in securely (without password)
-            const { password, ...userProfile } = newUser;
-            login(userProfile as UserProfile);
-
-            window.location.href = '/'; // Direct Home
+            // Success! Direct to home
+            window.location.href = '/';
 
         } catch (err: any) {
             setErrorMsg(err.message || "Error al registrar la cuenta.");

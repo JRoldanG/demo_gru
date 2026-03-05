@@ -1,32 +1,37 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useAuth, UserProfile } from '@/context/AuthContext';
-import { ArrowLeft, User, Mail, Lock, CheckCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
+import { ArrowLeft, Mail, Lock } from 'lucide-react';
 
 export default function LoginPage() {
-    const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMsg, setErrorMsg] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsLoading(true);
+        setErrorMsg('');
 
-        // Mock DB fetch from LocalStorage
-        const usersStr = localStorage.getItem('gru_mock_users') || '[]';
-        const users: any[] = JSON.parse(usersStr);
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-        // Find user
-        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+            if (error) {
+                throw new Error("Correo o contraseña incorrectos.");
+            }
 
-        if (user) {
-            // Remove password before saving to session
-            const { password, ...userProfile } = user;
-            login(userProfile as UserProfile);
-            window.location.href = '/'; // redirect to home
-        } else {
-            setErrorMsg("Correo o contraseña incorrectos.");
+            if (data.session) {
+                window.location.href = '/'; // redirect to home
+            }
+        } catch (err: any) {
+            setErrorMsg(err.message);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -76,8 +81,8 @@ export default function LoginPage() {
 
                             {errorMsg && <p style={{ color: '#ef4444', textAlign: 'center', fontWeight: 500, margin: '0.5rem 0' }}>{errorMsg}</p>}
 
-                            <button type="submit" className="button-primary" style={{ width: '100%' }}>
-                                Ingresar
+                            <button type="submit" className="button-primary" style={{ width: '100%' }} disabled={isLoading}>
+                                {isLoading ? 'Ingresando...' : 'Ingresar'}
                             </button>
                         </div>
                     </form>

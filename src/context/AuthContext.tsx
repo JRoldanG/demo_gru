@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 
 export type PriceTier = 'CLIENTE_FINAL' | 'ACCIONISTA' | 'DROGUISTA';
 
@@ -20,74 +21,63 @@ export interface UserProfile {
 interface AuthContextType {
     user: UserProfile | null;
     isAuthenticated: boolean;
-    login: (user: UserProfile) => void;
-    logout: () => void;
-    updateTier: (newTier: PriceTier) => void; // Utility for testing mock
+    logout: () => Promise<void>;
+    refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<UserProfile | null>(null);
-    const [mounted, setMounted] = useState(false);
+
+    const fetchProfile = async (userId: string) => {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (data) {
+            setUser(data as UserProfile);
+        } else {
+            console.error("Error fetching profile:", error);
+            setUser(null);
+        }
+    };
+
+    const refreshProfile = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+            await fetchProfile(session.user.id);
+        } else {
+            setUser(null);
+        }
+    };
 
     useEffect(() => {
-        setMounted(true);
+        // Initial fetch
+        refreshProfile();
 
-        // --- Demo Seeding for Admin ---
-        const existingUsers = localStorage.getItem('gru_mock_users');
-        if (!existingUsers) {
-            // Seed default admin account
-            const adminUser = {
-                id: 'admin-001',
-                name: 'Administrador General',
-                email: 'admin@gruinfacol.com',
-                password: 'admin', // Demo password
-                idType: 'CC',
-                idNumber: '0000',
-                phone: '0000',
-                address: 'Sede Central',
-                city: 'Bogota',
-                priceTier: 'ACCIONISTA' as PriceTier,
-                isAdmin: true
-            };
-            localStorage.setItem('gru_mock_users', JSON.stringify([adminUser]));
-        }
-
-        // Hydrate from localStorage
-        const storedUser = localStorage.getItem('gru_current_user');
-        if (storedUser) {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (error) {
-                console.error("Error loading user session", error);
-                localStorage.removeItem('gru_current_user');
+        // Listen for auth state changes (login, logout)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session?.user) {
+                await fetchProfile(session.user.id);
+            } else {
+                setUser(null);
             }
-        }
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
-    const login = (newUser: UserProfile) => {
-        setUser(newUser);
-        localStorage.setItem('gru_current_user', JSON.stringify(newUser));
-    };
-
-    const logout = () => {
+    const logout = async () => {
+        await supabase.auth.signOut();
         setUser(null);
-        localStorage.removeItem('gru_current_user');
+        window.location.href = '/login'; // Force redirect to prevent layout bug
     };
-
-    const updateTier = (newTier: PriceTier) => {
-        if (user) {
-            const updatedUser = { ...user, priceTier: newTier };
-            setUser(updatedUser);
-            localStorage.setItem('gru_current_user', JSON.stringify(updatedUser));
-        }
-    };
-
-    // Provide context immediately so child components (like CartProvider) don't throw an error
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, updateTier }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, logout, refreshProfile }}>
             {children}
         </AuthContext.Provider>
     );

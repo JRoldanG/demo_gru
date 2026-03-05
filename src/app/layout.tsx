@@ -9,7 +9,7 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 
 function Navbar() {
   const { itemCount, setIsCartOpen } = useCart();
-  const { user, isAuthenticated, logout, updateTier } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
 
   return (
     <nav className="glass-nav">
