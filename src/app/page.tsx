@@ -174,9 +174,11 @@ export default function Home() {
           <p className="text-sub" style={{ margin: 'var(--space-lg) auto', color: "var(--text-primary)", fontSize: "1.1rem", maxWidth: "100%" }}>
             <strong>Gruinfacol S.A.</strong> es una empresa colombiana dedicada a la investigación farmacéutica. Combinamos el rigor científico con la excelencia de manufactura para llevar salud, calidad de vida y confianza a miles de especialistas y pacientes en toda la región.
           </p>
-          <button className="button-primary" style={{ animation: 'slideUp 1s ease 0.3s forwards', opacity: 0, transform: 'translateY(30px)' }}>
-            Conoce Nuestro Catálogo <ArrowRight size={18} />
-          </button>
+          <a href="/products" style={{ textDecoration: 'none' }}>
+            <button className="button-primary" style={{ animation: 'slideUp 1s ease 0.3s forwards', opacity: 0, transform: 'translateY(30px)' }}>
+              Ver Productos <ArrowRight size={18} />
+            </button>
+          </a>
         </div>
       </section>
 
@@ -202,6 +204,7 @@ export default function Home() {
               icon={prod.icon}
               colSpanClass={prod.colSpanClass}
               imageUrl={prod.imageUrl}
+              showCartAndPrice={false}
             />
           ))}
         </div>

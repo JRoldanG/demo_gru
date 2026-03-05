@@ -4,23 +4,22 @@ import React, { useEffect, useState } from 'react';
 import { useAuth, PriceTier } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Users, ShieldAlert, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AdminDashboard() {
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, isInitializing } = useAuth();
     const [usersList, setUsersList] = useState<any[]>([]);
     const [mounted, setMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchUsers = async () => {
         setIsLoading(true);
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('isAdmin', false) // Only list non-admins
-            .order('name');
-
-        if (data) setUsersList(data);
-        if (error) console.error("Error fetching users:", error);
+        const { data: profiles, error } = await supabase.from('profiles').select('*');
+        if (error) {
+            console.error("Error fetching profiles:", error);
+        } else {
+            setUsersList(profiles || []);
+        }
         setIsLoading(false);
     };
 
@@ -31,7 +30,9 @@ export default function AdminDashboard() {
         }
     }, [isAuthenticated, user]);
 
-    if (!mounted) return null;
+    if (!mounted || isInitializing) {
+        return <main style={{ minHeight: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}><div className="animate-pulse" style={{ color: 'var(--trust-blue)' }}>Verificando sesión...</div></main>;
+    }
 
     // Security check: Only render if user is flagged as admin
     if (!isAuthenticated || !user?.isAdmin) {
@@ -41,7 +42,7 @@ export default function AdminDashboard() {
                     <ShieldAlert size={64} style={{ color: '#ef4444', margin: '0 auto var(--space-md)' }} />
                     <h1 style={{ fontSize: '2rem', color: 'var(--text-primary)' }}>Acceso Denegado</h1>
                     <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>No tienes permisos de Administrador.</p>
-                    <a href="/" className="button-primary" style={{ display: 'inline-block', marginTop: 'var(--space-md)' }}>Volver al Catálogo</a>
+                    <Link href="/" className="button-primary" style={{ display: 'inline-block', marginTop: 'var(--space-md)' }}>Volver al Catálogo</Link>
                 </div>
             </main>
         );
@@ -73,9 +74,9 @@ export default function AdminDashboard() {
         <main style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', paddingTop: 'calc(var(--space-xl))', paddingBottom: 'var(--space-3xl)' }}>
             <div className="container">
                 <div style={{ marginBottom: 'var(--space-xl)' }}>
-                    <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--trust-blue)', fontWeight: 500, transition: 'var(--transition-fast)' }} onMouseOver={(e) => e.currentTarget.style.color = 'var(--trust-blue-light)'} onMouseOut={(e) => e.currentTarget.style.color = 'var(--trust-blue)'}>
+                    <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--trust-blue)', fontWeight: 500, transition: 'var(--transition-fast)' }} onMouseOver={(e: any) => e.currentTarget.style.color = 'var(--trust-blue-light)'} onMouseOut={(e: any) => e.currentTarget.style.color = 'var(--trust-blue)'}>
                         <ArrowLeft size={20} /> Salir del Panel
-                    </a>
+                    </Link>
                     <h1 className="kinetic-header" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', marginTop: 'var(--space-sm)' }}>
                         Panel de <span className="text-gradient-primary">Administración</span>
                     </h1>
@@ -87,9 +88,17 @@ export default function AdminDashboard() {
                         <h2 style={{ fontSize: '1.5rem', color: 'var(--trust-blue)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Users size={24} /> Lista de Clientes en Supabase
                         </h2>
-                        <button onClick={fetchUsers} style={{ background: 'none', border: '1px solid var(--trust-blue)', color: 'var(--trust-blue)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>
-                            Recargar Datos
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <Link href="/admin/products" className="button-primary" style={{ textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
+                                Gestionar Productos
+                            </Link>
+                            <Link href="/ventas/orders" className="button-primary" style={{ textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.9rem', backgroundColor: 'var(--accent-teal)' }}>
+                                Gestionar Pedidos
+                            </Link>
+                            <button onClick={fetchUsers} style={{ background: 'none', border: '1px solid var(--trust-blue)', color: 'var(--trust-blue)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                Recargar Datos
+                            </button>
+                        </div>
                     </div>
 
                     <div style={{ overflowX: 'auto' }}>

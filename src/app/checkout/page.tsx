@@ -1,13 +1,22 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, ShoppingBag, Truck, MapPin, Mail, Phone, User, CheckCircle } from 'lucide-react';
 
 export default function CheckoutPage() {
     const { items, cartTotal, clearCart, getDiscountedPrice } = useCart();
-    const { user } = useAuth();
+    const { user, isAuthenticated, isInitializing } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!isInitializing && !isAuthenticated) {
+            router.push('/login');
+        }
+    }, [isInitializing, isAuthenticated, router]);
 
     const [formData, setFormData] = useState({
         name: user?.name || '',
@@ -20,6 +29,20 @@ export default function CheckoutPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+
+    // Sincronizar los datos del usuario cuando termina de cargar en el AuthProvider
+    useEffect(() => {
+        if (user) {
+            setFormData(prev => ({
+                ...prev,
+                name: user.name || prev.name,
+                email: user.email || prev.email,
+                phone: user.phone || prev.phone,
+                address: user.address || prev.address,
+                city: user.city || prev.city
+            }));
+        }
+    }, [user]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -38,6 +61,37 @@ export default function CheckoutPage() {
         setErrorMsg("");
 
         try {
+            // 1. Insert Order into Supabase
+            const { data: orderData, error: orderError } = await supabase
+                .from('orders')
+                .insert([{
+                    user_id: user?.id,
+                    status: 'Pendiente',
+                    dispatch_info: '',
+                    total: cartTotal
+                }])
+                .select()
+                .single();
+
+            if (orderError) throw orderError;
+            const newOrderId = orderData.id;
+
+            // 2. Insert Order Items
+            const orderItemsData = items.map(item => ({
+                order_id: newOrderId,
+                product_id: item.id,
+                quantity: item.quantity,
+                unit_price: getDiscountedPrice(item.price),
+                real_availability: item.quantity // default to requested quantity initially
+            }));
+
+            const { error: itemsError } = await supabase
+                .from('order_items')
+                .insert(orderItemsData);
+
+            if (itemsError) throw itemsError;
+
+            // 3. Send Email Notification
             const response = await fetch('/api/send-order', {
                 method: 'POST',
                 headers: {
@@ -46,18 +100,19 @@ export default function CheckoutPage() {
                 body: JSON.stringify({
                     formData,
                     items,
-                    total: cartTotal
+                    total: cartTotal,
+                    orderId: newOrderId
                 }),
             });
 
             if (!response.ok) {
-                throw new Error('Hubo un problema procesando tu orden.');
+                console.warn('The order was saved, but the email notification failed to send.');
             }
 
             setIsSuccess(true);
             clearCart();
         } catch (err: any) {
-            setErrorMsg(err.message || 'Error de conexión.');
+            setErrorMsg(err.message || 'Error guardando el pedido.');
         } finally {
             setIsSubmitting(false);
         }

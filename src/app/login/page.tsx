@@ -26,6 +26,18 @@ export default function LoginPage() {
             }
 
             if (data.session) {
+                // Verificar si tiene un perfil asociado antes de navegar
+                const { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('id', data.session.user.id)
+                    .single();
+
+                if (profileError || !profileData) {
+                    await supabase.auth.signOut();
+                    throw new Error("Tu cuenta no está completamente configurada (falta perfil). Contacta soporte técnico o regístrate de nuevo.");
+                }
+
                 window.location.href = '/'; // redirect to home
             }
         } catch (err: any) {

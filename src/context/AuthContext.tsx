@@ -16,11 +16,13 @@ export interface UserProfile {
     city: string;
     priceTier: PriceTier;
     isAdmin?: boolean;
+    role?: string;
 }
 
 interface AuthContextType {
     user: UserProfile | null;
     isAuthenticated: boolean;
+    isInitializing: boolean;
     logout: () => Promise<void>;
     refreshProfile: () => Promise<void>;
 }
@@ -29,6 +31,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<UserProfile | null>(null);
+    const [isInitializing, setIsInitializing] = useState(true);
 
     const fetchProfile = async (userId: string) => {
         const { data, error } = await supabase
@@ -37,10 +40,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .eq('id', userId)
             .single();
 
+        if (error) {
+            if (error.code === 'PGRST116') {
+                console.warn("El usuario no tiene un perfil en la tabla 'profiles'.");
+            } else {
+                console.error("Error fetching profile:", error.message || error);
+            }
+            setUser(null);
+            return;
+        }
+
         if (data) {
             setUser(data as UserProfile);
         } else {
-            console.error("Error fetching profile:", error);
             setUser(null);
         }
     };
@@ -55,19 +67,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
-        // Initial fetch
-        refreshProfile();
+        let mounted = true;
 
-        // Listen for auth state changes (login, logout)
+        // Listen for auth state changes (login, logout, and the INITIAL_SESSION on mount)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (session?.user) {
                 await fetchProfile(session.user.id);
             } else {
                 setUser(null);
             }
+            if (mounted) {
+                setIsInitializing(false);
+            }
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            mounted = false;
+            subscription.unsubscribe();
+        };
     }, []);
 
     const logout = async () => {
@@ -77,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, logout, refreshProfile }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isInitializing, logout, refreshProfile }}>
             {children}
         </AuthContext.Provider>
     );

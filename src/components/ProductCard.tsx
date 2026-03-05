@@ -9,9 +9,10 @@ interface ProductCardProps {
     icon: React.ReactNode;
     colSpanClass: string;
     imageUrl?: string;
+    showCartAndPrice?: boolean;
 }
 
-export default function ProductCard({ product, icon, colSpanClass, imageUrl }: ProductCardProps) {
+export default function ProductCard({ product, icon, colSpanClass, imageUrl, showCartAndPrice = true }: ProductCardProps) {
     const { addToCart, getDiscountedPrice } = useCart();
     const [isAdded, setIsAdded] = useState(false);
 
@@ -45,7 +46,7 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl }: P
                 <div className="product-icon-wrapper">
                     {icon}
                 </div>
-                <div className="product-price">{formattedPrice}</div>
+                {showCartAndPrice && <div className="product-price">{formattedPrice}</div>}
             </div>
 
             <div className="product-info">
@@ -56,20 +57,22 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl }: P
                 <p>{product.description}</p>
             </div>
 
-            <button
-                className={`button-add-cart ${isAdded ? 'added' : ''}`}
-                onClick={handleAdd}
-            >
-                {isAdded ? (
-                    <>
-                        <Check size={18} /> Agregado
-                    </>
-                ) : (
-                    <>
-                        <ShoppingCart size={18} /> Agregar al Carrito
-                    </>
-                )}
-            </button>
+            {showCartAndPrice && (
+                <button
+                    className={`button-add-cart ${isAdded ? 'added' : ''}`}
+                    onClick={handleAdd}
+                >
+                    {isAdded ? (
+                        <>
+                            <Check size={18} /> Agregado
+                        </>
+                    ) : (
+                        <>
+                            <ShoppingCart size={18} /> Agregar al Carrito
+                        </>
+                    )}
+                </button>
+            )}
         </div>
     );
 }

@@ -6,10 +6,11 @@ import { CartProvider, useCart } from '@/context/CartContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import ShoppingCartDrawer from '@/components/ShoppingCart';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import Link from 'next/link';
 
 function Navbar() {
   const { itemCount, setIsCartOpen } = useCart();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isInitializing } = useAuth();
 
   return (
     <nav className="glass-nav">
@@ -18,15 +19,20 @@ function Navbar() {
           <img src="/logo.png" alt="Gruinfacol S.A. Logo" />
         </div>
         <div className="nav-actions">
-          <a href="/" style={{ fontSize: "0.95rem", fontWeight: 500, color: "var(--text-secondary)", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "var(--trust-blue)"} onMouseOut={(e) => e.currentTarget.style.color = "var(--text-secondary)"}>Catálogo</a>
+          <Link href="/" style={{ fontSize: "0.95rem", fontWeight: 500, color: "var(--text-secondary)", transition: "color 0.2s" }} onMouseOver={(e: any) => e.currentTarget.style.color = "var(--trust-blue)"} onMouseOut={(e: any) => e.currentTarget.style.color = "var(--text-secondary)"}>Líneas de Especialidad</Link>
+          <Link href="/products" style={{ fontSize: "0.95rem", fontWeight: 500, color: "var(--text-secondary)", transition: "color 0.2s" }} onMouseOver={(e: any) => e.currentTarget.style.color = "var(--trust-blue)"} onMouseOut={(e: any) => e.currentTarget.style.color = "var(--text-secondary)"}>Productos</Link>
 
-          {isAuthenticated && user ? (
+          {isInitializing ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid var(--glass-border)', paddingRight: '1rem', marginRight: '0.5rem' }}>
+              <div className="animate-pulse" style={{ height: '24px', width: '100px', backgroundColor: 'var(--glass-border)', borderRadius: '4px' }}></div>
+            </div>
+          ) : isAuthenticated && user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid var(--glass-border)', paddingRight: '1rem', marginRight: '0.5rem' }}>
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--trust-blue)' }}>{user.name}</span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user.priceTier.replace('_', ' ')}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user.priceTier ? user.priceTier.replace('_', ' ') : ''}</span>
                 {user.isAdmin && (
-                  <a href="/admin" style={{ fontSize: '0.7rem', color: 'var(--accent-teal)', textDecoration: 'underline' }}>Panel Admin</a>
+                  <Link href="/admin" style={{ fontSize: '0.7rem', color: 'var(--accent-teal)', textDecoration: 'underline' }}>Panel Admin</Link>
                 )}
               </div>
               <button onClick={logout} title="Cerrar Sesión" style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
@@ -35,13 +41,19 @@ function Navbar() {
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid var(--glass-border)', paddingRight: '1rem', marginRight: '0.5rem' }}>
-              <a href="/login" style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--trust-blue)", display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <Link href="/login" style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--trust-blue)", display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                 <UserCircle size={18} /> Iniciar Sesión
-              </a>
+              </Link>
             </div>
           )}
 
-          <button className="cart-trigger" onClick={() => setIsCartOpen(true)}>
+          <button className="cart-trigger" onClick={() => {
+            if (isAuthenticated) {
+              setIsCartOpen(true);
+            } else {
+              window.location.href = '/login';
+            }
+          }}>
             <ShoppingBag size={20} />
             {itemCount > 0 && (
               <span className="cart-badge">{itemCount}</span>
