@@ -62,10 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    // Return empty fragment or nothing until mounted to avoid hydration differences
-    if (!mounted) {
-        return <>{children}</>;
-    }
+    // Provide context immediately so child components (like CartProvider) don't throw an error
 
     return (
         <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, updateTier }}>
