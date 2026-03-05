@@ -5,7 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { X, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 
 export default function ShoppingCartDrawer() {
-    const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
+    const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal, clearCart, getDiscountedPrice } = useCart();
     const [mounted, setMounted] = useState(false);
 
     // Prevent hydration mismatch
@@ -46,7 +46,7 @@ export default function ShoppingCartDrawer() {
                                 <div className="cart-item-info">
                                     <h4>{item.name}</h4>
                                     <div className="cart-item-price">
-                                        {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(item.price)}
+                                        {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(getDiscountedPrice(item.price))}
                                     </div>
                                 </div>
 

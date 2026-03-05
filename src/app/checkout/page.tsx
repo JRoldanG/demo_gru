@@ -2,16 +2,19 @@
 
 import React, { useState } from 'react';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 import { ArrowLeft, ShoppingBag, Truck, MapPin, Mail, Phone, User, CheckCircle } from 'lucide-react';
 
 export default function CheckoutPage() {
-    const { items, cartTotal, clearCart } = useCart();
+    const { items, cartTotal, clearCart, getDiscountedPrice } = useCart();
+    const { user } = useAuth();
+
     const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        address: '',
-        city: '',
+        name: user?.name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        address: user?.address || '',
+        city: user?.city || '',
         notes: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -224,7 +227,7 @@ export default function CheckoutPage() {
                                                     <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Cant: {item.quantity}</span>
                                                 </div>
                                                 <div style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
-                                                    ${(item.price * item.quantity).toLocaleString('es-CO')}
+                                                    ${(getDiscountedPrice(item.price) * item.quantity).toLocaleString('es-CO')}
                                                 </div>
                                             </div>
                                         ))

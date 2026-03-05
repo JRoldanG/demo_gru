@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
 
 export type Product = {
     id: string;
@@ -24,11 +25,13 @@ type CartContextType = {
     setIsCartOpen: (isOpen: boolean) => void;
     cartTotal: number;
     itemCount: number;
+    getDiscountedPrice: (basePrice: number) => number;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
+    const { user } = useAuth();
     const [items, setItems] = useState<CartItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
 
@@ -78,7 +81,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const clearCart = () => setItems([]);
 
-    const cartTotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    const getDiscountedPrice = (basePrice: number) => {
+        if (!user) return basePrice;
+        switch (user.priceTier) {
+            case 'ACCIONISTA': return basePrice * 0.8; // 20% discount
+            case 'DROGUISTA': return basePrice * 0.9;  // 10% discount
+            default: return basePrice;
+        }
+    };
+
+    const cartTotal = items.reduce((total, item) => total + (getDiscountedPrice(item.price) * item.quantity), 0);
     const itemCount = items.reduce((count, item) => count + item.quantity, 0);
 
     return (
@@ -93,6 +105,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 setIsCartOpen,
                 cartTotal,
                 itemCount,
+                getDiscountedPrice,
             }}
         >
             {children}

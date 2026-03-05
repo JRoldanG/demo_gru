@@ -1,13 +1,15 @@
 "use client";
 
 import './globals.css';
-import { Beaker, ShoppingBag } from 'lucide-react';
+import { Beaker, ShoppingBag, UserCircle, LogOut } from 'lucide-react';
 import { CartProvider, useCart } from '@/context/CartContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import ShoppingCartDrawer from '@/components/ShoppingCart';
 import WhatsAppButton from '@/components/WhatsAppButton';
 
 function Navbar() {
   const { itemCount, setIsCartOpen } = useCart();
+  const { user, isAuthenticated, logout } = useAuth();
 
   return (
     <nav className="glass-nav">
@@ -16,7 +18,26 @@ function Navbar() {
           <img src="/logo.png" alt="Gruinfacol S.A. Logo" />
         </div>
         <div className="nav-actions">
-          <a href="#" style={{ fontSize: "0.95rem", fontWeight: 500, color: "var(--text-secondary)", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "white"} onMouseOut={(e) => e.currentTarget.style.color = "var(--text-secondary)"}>Productos</a>
+          <a href="/" style={{ fontSize: "0.95rem", fontWeight: 500, color: "var(--text-secondary)", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "var(--trust-blue)"} onMouseOut={(e) => e.currentTarget.style.color = "var(--text-secondary)"}>Catálogo</a>
+
+          {isAuthenticated && user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid var(--glass-border)', paddingRight: '1rem', marginRight: '0.5rem' }}>
+              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--trust-blue)' }}>{user.name}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user.priceTier.replace('_', ' ')}</span>
+              </div>
+              <button onClick={logout} title="Cerrar Sesión" style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <LogOut size={18} />
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid var(--glass-border)', paddingRight: '1rem', marginRight: '0.5rem' }}>
+              <a href="/login" style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--trust-blue)", display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <UserCircle size={18} /> Iniciar Sesión
+              </a>
+            </div>
+          )}
+
           <button className="cart-trigger" onClick={() => setIsCartOpen(true)}>
             <ShoppingBag size={20} />
             {itemCount > 0 && (
@@ -83,13 +104,15 @@ export default function RootLayout({
         <meta name="description" content="Gruinfacol S.A. es una empresa colombiana dedicada a la investigación farmacéutica con más de 27 años de experiencia." />
       </head>
       <body>
-        <CartProvider>
-          <Navbar />
-          <ShoppingCartDrawer />
-          {children}
-          <WhatsAppButton />
-          <Footer />
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <Navbar />
+            <ShoppingCartDrawer />
+            {children}
+            <WhatsAppButton />
+            <Footer />
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

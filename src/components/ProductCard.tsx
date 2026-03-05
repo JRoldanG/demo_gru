@@ -12,7 +12,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, icon, colSpanClass, imageUrl }: ProductCardProps) {
-    const { addToCart } = useCart();
+    const { addToCart, getDiscountedPrice } = useCart();
     const [isAdded, setIsAdded] = useState(false);
 
     const handleAdd = () => {
@@ -25,12 +25,14 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl }: P
         }, 2000);
     };
 
+    const finalPrice = getDiscountedPrice(product.price);
+
     // Format price as COP (Colombian Peso) for realism
     const formattedPrice = new Intl.NumberFormat('es-CO', {
         style: 'currency',
         currency: 'COP',
         minimumFractionDigits: 0
-    }).format(product.price);
+    }).format(finalPrice);
 
     const cardStyle = imageUrl ? { backgroundImage: `url(${imageUrl})` } : {};
 
