@@ -11,6 +11,8 @@ export default function AdminProducts() {
     const [productsList, setProductsList] = useState<any[]>([]);
     const [mounted, setMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formError, setFormError] = useState('');
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -79,11 +81,14 @@ export default function AdminProducts() {
                 price_cliente: 0, price_accionista: 0, price_droguista: 0
             });
         }
+        setFormError('');
         setIsFormOpen(true);
     };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSubmitting(true);
+        setFormError('');
         try {
             const prodData = {
                 name: formData.name, description: formData.description, line: formData.line,
@@ -95,13 +100,15 @@ export default function AdminProducts() {
             if (targetId) {
                 const { error: updateErr } = await supabase.from('products').update(prodData).eq('id', targetId);
                 if (updateErr) {
-                    alert("Error actualizando producto: " + updateErr.message);
+                    setFormError("Error actualizando producto: " + updateErr.message);
+                    setIsSubmitting(false);
                     return;
                 }
             } else {
                 const { data, error } = await supabase.from('products').insert([prodData]).select().single();
                 if (error) {
-                    alert("Error creando producto: " + error.message);
+                    setFormError("Error creando producto: " + error.message);
+                    setIsSubmitting(false);
                     return;
                 }
                 targetId = data.id;
@@ -124,7 +131,9 @@ export default function AdminProducts() {
             setIsFormOpen(false);
             fetchProducts();
         } catch (err: any) {
-            alert("Error inesperado: " + err.message);
+            setFormError("Error inesperado: " + err.message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -136,7 +145,7 @@ export default function AdminProducts() {
     };
 
     return (
-        <main style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', paddingTop: 'calc(var(--space-xl))', paddingBottom: 'var(--space-3xl)' }}>
+        <main style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', paddingTop: 'calc(100px + var(--space-xl))', paddingBottom: 'var(--space-3xl)' }}>
             <div className="container" style={{ maxWidth: '1200px' }}>
                 <div style={{ marginBottom: 'var(--space-xl)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
@@ -195,9 +204,18 @@ export default function AdminProducts() {
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.2rem' }}>Precio Droguista ($)</label>
                                 <input required type="number" value={formData.price_droguista} onChange={e => setFormData({ ...formData, price_droguista: Number(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--glass-border)' }} />
                             </div>
-                            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                <button type="submit" className="button-primary">Guardar Producto</button>
-                                <button type="button" onClick={() => setIsFormOpen(false)} style={{ padding: '0.5rem 1rem', border: '1px solid var(--glass-border)', borderRadius: '4px', backgroundColor: 'transparent', cursor: 'pointer' }}>Cancelar</button>
+                            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '1rem', marginTop: '1rem', flexDirection: 'column' }}>
+                                {formError && (
+                                    <div style={{ padding: '0.75rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '4px', fontSize: '0.9rem' }}>
+                                        {formError}
+                                    </div>
+                                )}
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <button type="submit" className="button-primary" disabled={isSubmitting} style={{ opacity: isSubmitting ? 0.7 : 1 }}>
+                                        {isSubmitting ? 'Guardando...' : 'Guardar Producto'}
+                                    </button>
+                                    <button type="button" onClick={() => setIsFormOpen(false)} style={{ padding: '0.5rem 1rem', border: '1px solid var(--glass-border)', borderRadius: '4px', backgroundColor: 'transparent', cursor: 'pointer' }} disabled={isSubmitting}>Cancelar</button>
+                                </div>
                             </div>
                         </form>
                     </div>
