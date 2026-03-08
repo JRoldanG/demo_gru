@@ -3,10 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import { X, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function ShoppingCartDrawer() {
     const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal, clearCart, getDiscountedPrice } = useCart();
     const [mounted, setMounted] = useState(false);
+    const router = useRouter();
 
     // Prevent hydration mismatch
     useEffect(() => setMounted(true), []);
@@ -88,7 +90,7 @@ export default function ShoppingCartDrawer() {
                             style={{ width: '100%', marginBottom: '0.75rem' }}
                             onClick={() => {
                                 setIsCartOpen(false);
-                                window.location.href = '/checkout';
+                                router.push('/checkout');
                             }}
                         >
                             Proceder al Pago
