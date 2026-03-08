@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
-import { Pill, Droplet, ShieldAlert, Wind, Activity, HeartPulse, Leaf, Syringe, Stethoscope, Brain, Eye, Baby, Package } from 'lucide-react';
+import { Search, Pill, Droplet, ShieldAlert, Wind, Activity, HeartPulse, Leaf, Syringe, Stethoscope, Brain, Eye, Baby, Package } from 'lucide-react';
 
 // Helper to map line names to icons, keeping the original page.tsx aesthetic
 const getIconForLine = (line: string) => {
@@ -34,6 +34,8 @@ export default function ProductsPage() {
     const router = useRouter();
     const [productsList, setProductsList] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('Todas');
 
     useEffect(() => {
         if (!isInitializing) {
@@ -113,8 +115,23 @@ export default function ProductsPage() {
         );
     }
 
+    const uniqueCategories = ['Todas', ...Array.from(new Set(productsList.map(p => p.category)))].filter(Boolean);
+
+    const filteredProducts = productsList.filter(prod => {
+        const matchesSearch = prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (prod.description && prod.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        const matchesCategory = selectedCategory === 'Todas' || prod.category === selectedCategory;
+
+        return matchesSearch && matchesCategory;
+    });
+
     return (
         <main>
+            <style jsx>{`
+                .category-scroll::-webkit-scrollbar {
+                    display: none;
+                }
+            `}</style>
             <div className="bg-medical-grid"></div>
 
             <section className="section" style={{ paddingTop: 'calc(var(--space-3xl) * 1.5)', minHeight: '40vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', backgroundColor: 'rgba(248, 250, 252, 0.95)', boxShadow: 'var(--shadow-md)', marginBottom: 'var(--space-2xl)' }}>
@@ -131,10 +148,75 @@ export default function ProductsPage() {
                 </div>
             </section>
 
+            {/* Filters Section */}
+            <section className="container section" style={{ paddingTop: 0, paddingBottom: '2rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '1rem' }}>
+                    {/* Search Bar */}
+                    <div style={{ position: 'relative', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
+                        <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                            <Search size={20} />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Buscar medicamentos, principios activos..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '1rem 1rem 1rem 3rem',
+                                borderRadius: '12px',
+                                border: '1px solid var(--border-color)',
+                                backgroundColor: 'var(--glass-bg)',
+                                backdropFilter: 'blur(10px)',
+                                fontSize: '1rem',
+                                color: 'var(--text-primary)',
+                                outline: 'none',
+                                transition: 'all 0.3s ease',
+                                boxShadow: 'var(--shadow-sm)'
+                            }}
+                            onFocus={(e) => e.target.style.borderColor = 'var(--trust-blue)'}
+                            onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                        />
+                    </div>
+
+                    {/* Category Pills */}
+                    <div style={{
+                        display: 'flex',
+                        gap: '0.75rem',
+                        overflowX: 'auto',
+                        paddingBottom: '0.5rem',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                        justifyContent: uniqueCategories.length > 5 ? 'flex-start' : 'center'
+                    }} className="category-scroll">
+                        {uniqueCategories.map(category => (
+                            <button
+                                key={category}
+                                onClick={() => setSelectedCategory(category)}
+                                style={{
+                                    padding: '0.5rem 1.25rem',
+                                    borderRadius: '9999px',
+                                    whiteSpace: 'nowrap',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 500,
+                                    transition: 'all 0.2s',
+                                    border: selectedCategory === category ? '1px solid var(--trust-blue)' : '1px solid var(--border-color)',
+                                    backgroundColor: selectedCategory === category ? 'var(--trust-blue)' : 'transparent',
+                                    color: selectedCategory === category ? 'white' : 'var(--text-secondary)',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {category}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             <section className="container section" style={{ paddingTop: 0, minHeight: '50vh' }}>
                 <div className="bento-grid">
-                    {productsList.length > 0 ? (
-                        productsList.map((prod) => (
+                    {filteredProducts.length > 0 ? (
+                        filteredProducts.map((prod) => (
                             <ProductCard
                                 key={prod.id}
                                 product={{
@@ -152,7 +234,26 @@ export default function ProductsPage() {
                         ))
                     ) : (
                         <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                            <p>No se encontraron productos disponibles para tu lista de precios actual.</p>
+                            <Search size={48} style={{ opacity: 0.2, margin: '0 auto 1rem' }} />
+                            <p>No se encontraron productos que coincidan con tu búsqueda.</p>
+                            {(searchQuery || selectedCategory !== 'Todas') && (
+                                <button
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setSelectedCategory('Todas');
+                                    }}
+                                    style={{
+                                        marginTop: '1rem',
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--trust-blue)',
+                                        textDecoration: 'underline',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Limpiar filtros
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
