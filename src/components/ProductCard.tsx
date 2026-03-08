@@ -16,10 +16,12 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
     const { addToCart, getDiscountedPrice } = useCart();
     const [isAdded, setIsAdded] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
+    const [quantity, setQuantity] = useState<number>(1);
 
     const handleAdd = () => {
-        addToCart(product);
+        addToCart(product, quantity);
         setIsAdded(true);
+        setQuantity(1);
 
         // Reset added state after 2 seconds for visual feedback
         setTimeout(() => {
@@ -81,26 +83,27 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
             )}
 
             <div className="product-card-header" style={{ position: 'relative', zIndex: 11 }}>
-                <div
-                    className="product-icon-wrapper"
-                    style={{
-                        display: 'flex',
-                        gap: '0.4rem',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: product.vademecum ? 'auto' : '56px',
-                        padding: product.vademecum ? '0 1rem' : '0'
-                    }}
-                >
-                    {product.vademecum ? (
-                        <>
-                            <Info size={16} style={{ color: 'var(--trust-blue)' }} />
-                            <span style={{ color: 'var(--trust-blue)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Detalle</span>
-                        </>
-                    ) : (
-                        icon
-                    )}
-                </div>
+                {product.vademecum && (
+                    <div
+                        className="product-icon-wrapper"
+                        style={{
+                            display: 'flex',
+                            gap: '0.2rem',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 'auto',
+                            padding: '0 0.5rem',
+                            height: '28px',
+                            backgroundColor: 'white',
+                            borderRadius: '14px',
+                            border: '1px solid var(--glass-border)',
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+                        }}
+                    >
+                        <Info size={14} style={{ color: 'var(--trust-blue)' }} />
+                        <span style={{ color: 'var(--trust-blue)', fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Detalle</span>
+                    </div>
+                )}
                 {showCartAndPrice && (
                     <div
                         className="product-price"
@@ -132,21 +135,39 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
             </div>
 
             {showCartAndPrice && (
-                <button
-                    className={`button-add-cart ${isAdded ? 'added' : ''}`}
-                    onClick={handleAdd}
-                    style={{ position: 'relative', zIndex: 11, marginTop: 'auto' }}
-                >
-                    {isAdded ? (
-                        <>
-                            <Check size={18} /> Agregado
-                        </>
-                    ) : (
-                        <>
-                            <ShoppingCart size={18} /> Agregar al Carrito
-                        </>
-                    )}
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', position: 'relative', zIndex: 11 }}>
+                    <input
+                        type="number"
+                        min="1"
+                        value={quantity}
+                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        style={{
+                            width: '80px',
+                            padding: '0.5rem',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--glass-border)',
+                            outline: 'none',
+                            textAlign: 'center',
+                            fontWeight: 600,
+                            backgroundColor: 'white'
+                        }}
+                    />
+                    <button
+                        className={`button-add-cart ${isAdded ? 'added' : ''}`}
+                        onClick={handleAdd}
+                        style={{ flex: 1 }}
+                    >
+                        {isAdded ? (
+                            <>
+                                <Check size={18} /> Agregado
+                            </>
+                        ) : (
+                            <>
+                                <ShoppingCart size={18} /> Agregar
+                            </>
+                        )}
+                    </button>
+                </div>
             )}
         </div>
     );

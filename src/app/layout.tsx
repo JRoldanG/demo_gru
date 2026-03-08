@@ -47,13 +47,7 @@ function Navbar() {
             </div>
           )}
 
-          <button className="cart-trigger" onClick={() => {
-            if (isAuthenticated) {
-              setIsCartOpen(true);
-            } else {
-              window.location.href = '/login';
-            }
-          }}>
+          <button className="cart-trigger" onClick={() => setIsCartOpen(true)}>
             <ShoppingBag size={20} />
             {itemCount > 0 && (
               <span className="cart-badge">{itemCount}</span>

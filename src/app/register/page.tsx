@@ -17,6 +17,7 @@ export default function RegisterPage() {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+    const [isSuccess, setIsSuccess] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -69,8 +70,9 @@ export default function RegisterPage() {
                 console.error("Warning: Could not send email notification to admin");
             }
 
-            // Success! Direct to home
-            window.location.href = '/';
+            // Log out immediately to prevent auto-login
+            await supabase.auth.signOut();
+            setIsSuccess(true);
 
         } catch (err: any) {
             setErrorMsg(err.message || "Error al registrar la cuenta.");
@@ -78,6 +80,29 @@ export default function RegisterPage() {
             setIsSubmitting(false);
         }
     };
+
+    if (isSuccess) {
+        return (
+            <main style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', paddingTop: 'calc(100px + var(--space-xl))', paddingBottom: 'var(--space-3xl)' }}>
+                <div className="container" style={{ maxWidth: '600px', textAlign: 'center' }}>
+                    <div className="glass-panel" style={{ padding: 'var(--space-3xl) var(--space-xl)' }}>
+                        <CheckCircle size={64} style={{ color: 'var(--trust-blue)', margin: '0 auto var(--space-md)' }} />
+                        <h1 className="kinetic-header" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
+                            Registro <span className="text-gradient-primary">Exitoso</span>
+                        </h1>
+                        <p style={{ color: 'var(--text-secondary)', marginTop: 'var(--space-md)', fontSize: '1.1rem', lineHeight: '1.6' }}>
+                            Tu cuenta ha sido creada exitosamente.
+                            <br />
+                            Por favor, <strong>revisa tu bandeja de entrada</strong> (o carpeta de spam) y haz clic en el enlace para confirmar tu correo electrónico.
+                        </p>
+                        <a href="/login" className="button-primary" style={{ display: 'inline-block', marginTop: 'var(--space-xl)' }}>
+                            Ir al Inicio de Sesión
+                        </a>
+                    </div>
+                </div>
+            </main>
+        );
+    }
 
     return (
         <main style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', paddingTop: 'calc(var(--space-xl))', paddingBottom: 'var(--space-3xl)' }}>

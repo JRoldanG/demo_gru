@@ -59,7 +59,29 @@ export default function ShoppingCartDrawer() {
                                     >
                                         <Minus size={14} />
                                     </button>
-                                    <span style={{ width: '20px', textAlign: 'center', fontSize: '0.9rem' }}>{item.quantity}</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={item.quantity}
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value);
+                                            if (!isNaN(val) && val > 0) {
+                                                updateQuantity(item.id, val);
+                                            }
+                                        }}
+                                        style={{
+                                            width: '65px',
+                                            textAlign: 'center',
+                                            fontSize: '0.9rem',
+                                            border: '1px solid var(--glass-border)',
+                                            borderRadius: 'var(--radius-sm)',
+                                            outline: 'none',
+                                            backgroundColor: 'var(--bg-color)',
+                                            color: 'var(--text-primary)',
+                                            padding: '0.2rem',
+                                            margin: '0 0.25rem'
+                                        }}
+                                    />
                                     <button
                                         className="quantity-btn"
                                         onClick={() => updateQuantity(item.id, item.quantity + 1)}

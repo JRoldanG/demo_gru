@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth, PriceTier } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
-import { Users, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { Users, ShieldAlert, ArrowLeft, Search } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
@@ -11,6 +11,8 @@ export default function AdminDashboard() {
     const [usersList, setUsersList] = useState<any[]>([]);
     const [mounted, setMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedTier, setSelectedTier] = useState('');
 
     const fetchUsers = async () => {
         setIsLoading(true);
@@ -48,19 +50,19 @@ export default function AdminDashboard() {
         );
     }
 
-    const handleChangeRole = async (userId: string, newRole: string) => {
+    const handleChangePriceTier = async (userId: string, newTier: string) => {
         // Optimistic UI Update
         const previousUsers = [...usersList];
-        setUsersList(usersList.map(u => u.id === userId ? { ...u, priceTier: newRole } : u));
+        setUsersList(usersList.map(u => u.id === userId ? { ...u, priceTier: newTier } : u));
 
         // Supabase DB Update
         const { error } = await supabase
             .from('profiles')
-            .update({ priceTier: newRole })
+            .update({ priceTier: newTier })
             .eq('id', userId);
 
         if (error) {
-            console.error("Error updating role:", error);
+            console.error("Error updating price tier:", error);
             // Revert on failure
             setUsersList(previousUsers);
             alert("Hubo un error al actualizar la lista de precios de este cliente. Inténtalo de nuevo.");
@@ -69,6 +71,53 @@ export default function AdminDashboard() {
             console.log("Tier updated securely in DB.");
         }
     };
+
+    const handleChangeStaffRole = async (userId: string, newRole: string) => {
+        const previousUsers = [...usersList];
+        setUsersList(usersList.map(u => u.id === userId ? { ...u, role: newRole } : u));
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ role: newRole })
+            .eq('id', userId);
+
+        if (error) {
+            console.error("Error updating staff role:", error);
+            setUsersList(previousUsers);
+            alert("Hubo un error al actualizar el rol de este usuario.");
+        } else {
+            console.log("Staff role updated securely in DB.");
+        }
+    };
+
+    const handleChangeIsAdmin = async (userId: string, isAdmin: boolean) => {
+        const previousUsers = [...usersList];
+        setUsersList(usersList.map(u => u.id === userId ? { ...u, isAdmin } : u));
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ isAdmin })
+            .eq('id', userId);
+
+        if (error) {
+            console.error("Error updating admin status:", error);
+            setUsersList(previousUsers);
+            alert("Hubo un error al actualizar los permisos de administrador.");
+        } else {
+            console.log("Admin status updated securely in DB.");
+        }
+    };
+
+    const filteredUsers = usersList.filter(u => {
+        const matchesSearch =
+            (u.name && u.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (u.phone && u.phone.toLowerCase().includes(searchQuery.toLowerCase()));
+
+        const matchesTier = selectedTier === '' || u.priceTier === selectedTier;
+
+        return matchesSearch && matchesTier;
+    });
 
     return (
         <main style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', paddingTop: 'calc(var(--space-xl))', paddingBottom: 'var(--space-3xl)' }}>
@@ -101,6 +150,35 @@ export default function AdminDashboard() {
                         </div>
                     </div>
 
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{ position: 'relative', flex: '1 1 300px' }}>
+                            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre, correo o teléfono..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem 1rem 0.75rem 2.5rem',
+                                    borderRadius: '4px',
+                                    border: '1px solid var(--glass-border)',
+                                    outline: 'none'
+                                }}
+                            />
+                        </div>
+                        <select
+                            value={selectedTier}
+                            onChange={(e) => setSelectedTier(e.target.value)}
+                            style={{ padding: '0.75rem 1rem', borderRadius: '4px', border: '1px solid var(--glass-border)', outline: 'none', backgroundColor: 'white' }}
+                        >
+                            <option value="">Todas las Listas de Precio</option>
+                            <option value="CLIENTE_FINAL">Cliente Final</option>
+                            <option value="ACCIONISTA">Accionista</option>
+                            <option value="DROGUISTA">Droguista</option>
+                        </select>
+                    </div>
+
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
@@ -109,23 +187,25 @@ export default function AdminDashboard() {
                                     <th style={{ padding: '1rem 0.5rem' }}>Correo</th>
                                     <th style={{ padding: '1rem 0.5rem' }}>Teléfono</th>
                                     <th style={{ padding: '1rem 0.5rem' }}>Lista de Precios Asignada</th>
+                                    <th style={{ padding: '1rem 0.5rem' }}>Rol en Plataforma</th>
+                                    <th style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>¿Es Admin?</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {isLoading ? (
                                     <tr>
-                                        <td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: 'var(--trust-blue)' }}>
+                                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--trust-blue)' }}>
                                             Conectando base de datos...
                                         </td>
                                     </tr>
-                                ) : usersList.length === 0 ? (
+                                ) : filteredUsers.length === 0 ? (
                                     <tr>
-                                        <td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                                            Aún no se han registrado clientes en la página web.
+                                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                                            No se encontraron clientes con esos filtros.
                                         </td>
                                     </tr>
                                 ) : (
-                                    usersList.map((client) => {
+                                    filteredUsers.map((client) => {
                                         return (
                                             <tr key={client.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
                                                 <td style={{ padding: '1rem 0.5rem', fontWeight: 500, color: 'var(--text-primary)' }}>{client.name}</td>
@@ -134,7 +214,7 @@ export default function AdminDashboard() {
                                                 <td style={{ padding: '1rem 0.5rem' }}>
                                                     <select
                                                         value={client.priceTier}
-                                                        onChange={(e) => handleChangeRole(client.id, e.target.value)}
+                                                        onChange={(e) => handleChangePriceTier(client.id, e.target.value)}
                                                         style={{
                                                             width: '100%',
                                                             padding: '0.5rem',
@@ -150,6 +230,42 @@ export default function AdminDashboard() {
                                                         <option value="ACCIONISTA">Accionista</option>
                                                         <option value="DROGUISTA">Droguista</option>
                                                     </select>
+                                                </td>
+                                                <td style={{ padding: '1rem 0.5rem' }}>
+                                                    <select
+                                                        value={client.role || 'cliente'}
+                                                        onChange={(e) => handleChangeStaffRole(client.id, e.target.value)}
+                                                        style={{
+                                                            width: '100%',
+                                                            padding: '0.5rem',
+                                                            borderRadius: 'var(--radius-sm)',
+                                                            border: '1px solid var(--glass-border)',
+                                                            outline: 'none',
+                                                            backgroundColor: client.role === 'admin' ? '#f3f4f6' : 'white',
+                                                            fontWeight: 500,
+                                                            color: 'var(--text-primary)'
+                                                        }}
+                                                    >
+                                                        <option value="cliente">Cliente</option>
+                                                        <option value="gestor_ventas">Gestor Ventas</option>
+                                                        <option value="gestor_despachos">Gestor Despachos</option>
+                                                        <option value="admin">Administrador (Legacy)</option>
+                                                    </select>
+                                                </td>
+                                                <td style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={client.isAdmin || false}
+                                                        onChange={(e) => handleChangeIsAdmin(client.id, e.target.checked)}
+                                                        disabled={client.id === user?.id}
+                                                        style={{
+                                                            width: '1.2rem',
+                                                            height: '1.2rem',
+                                                            cursor: client.id === user?.id ? 'not-allowed' : 'pointer',
+                                                            accentColor: 'var(--trust-blue)'
+                                                        }}
+                                                        title={client.id === user?.id ? "No puedes remover tus propios permisos de administrador" : "Otorgar o remover acceso al panel de administración"}
+                                                    />
                                                 </td>
                                             </tr>
                                         )

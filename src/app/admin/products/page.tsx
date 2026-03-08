@@ -16,6 +16,7 @@ export default function AdminProducts() {
     const [formError, setFormError] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedLine, setSelectedLine] = useState('');
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [editingProduct, setEditingProduct] = useState<any>(null);
     const [formData, setFormData] = useState({
@@ -124,6 +125,7 @@ export default function AdminProducts() {
                     throw new Error("Error alojando la imagen en ImgBB. Detalles: " + (result.error?.message || JSON.stringify(result)));
                 }
             } catch (err: any) {
+                console.error("ImgBB Catch Error:", err);
                 setFormError("Error subiendo la imagen: " + err.message);
                 setIsSubmitting(false);
                 setIsUploadingImage(false);
@@ -144,18 +146,26 @@ export default function AdminProducts() {
             if (targetId) {
                 const { error: updateErr } = await supabase.from('products').update(prodData).eq('id', targetId);
                 if (updateErr) {
+                    console.error("Supabase Update Error:", updateErr);
                     setFormError("Error actualizando producto: " + updateErr.message);
                     setIsSubmitting(false);
                     return;
                 }
             } else {
-                const { data, error } = await supabase.from('products').insert([prodData]).select().single();
+                const { data, error } = await supabase.from('products').insert([prodData]).select();
                 if (error) {
+                    console.error("Supabase Insert Error:", error);
                     setFormError("Error creando producto: " + error.message);
                     setIsSubmitting(false);
                     return;
                 }
-                targetId = data.id;
+                if (data && data.length > 0) {
+                    targetId = data[0].id;
+                } else {
+                    setFormError("Error: El producto se creó pero no se devolvió el ID.");
+                    setIsSubmitting(false);
+                    return;
+                }
             }
 
             const prices = [
@@ -187,10 +197,18 @@ export default function AdminProducts() {
         }
     };
 
-    const filteredProducts = productsList.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.line.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const uniqueLines = Array.from(new Set(productsList.map(p => p.line))).filter(Boolean).sort();
+
+    const filteredProducts = productsList.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (p.line && p.line.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (p.vademecum && p.vademecum.toLowerCase().includes(searchQuery.toLowerCase()));
+
+        const matchesLine = selectedLine === '' || p.line === selectedLine;
+
+        return matchesSearch && matchesLine;
+    });
 
     return (
         <main style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', paddingTop: 'calc(100px + var(--space-xl))', paddingBottom: 'var(--space-3xl)' }}>
@@ -299,6 +317,42 @@ export default function AdminProducts() {
                         </form>
                     </div>
                 )}
+
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                        <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input
+                            type="text"
+                            placeholder="Buscar por nombre, línea, componente o descripción..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem 1rem 0.75rem 2.5rem',
+                                borderRadius: '4px',
+                                border: '1px solid var(--glass-border)',
+                                outline: 'none'
+                            }}
+                        />
+                    </div>
+                    <select
+                        value={selectedLine}
+                        onChange={(e) => setSelectedLine(e.target.value)}
+                        style={{
+                            padding: '0.75rem 1rem',
+                            borderRadius: '4px',
+                            border: '1px solid var(--glass-border)',
+                            outline: 'none',
+                            backgroundColor: 'white',
+                            minWidth: '200px'
+                        }}
+                    >
+                        <option value="">Todas las Líneas</option>
+                        {uniqueLines.map(line => (
+                            <option key={line as string} value={line as string}>{line as string}</option>
+                        ))}
+                    </select>
+                </div>
 
                 <div className="glass-panel" style={{ padding: 'var(--space-md)' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>

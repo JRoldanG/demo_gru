@@ -23,6 +23,9 @@ export default function LoginPage() {
 
             if (error) {
                 console.error("Login error:", error);
+                if (error.message.includes("Email not confirmed")) {
+                    throw new Error("Debes confirmar tu correo electrónico. Por favor, revisa tu bandeja de entrada o la carpeta de spam y haz clic en el enlace de confirmación.");
+                }
                 throw new Error(error.message || "Correo o contraseña incorrectos.");
             }
 
