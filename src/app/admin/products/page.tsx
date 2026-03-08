@@ -12,9 +12,11 @@ export default function AdminProducts() {
     const [mounted, setMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [formError, setFormError] = useState('');
 
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [imageFile, setImageFile] = useState<File | null>(null);
     const [editingProduct, setEditingProduct] = useState<any>(null);
     const [formData, setFormData] = useState({
         name: '', description: '', line: '', invima_registration: '', status: 'Disponible', image_url: '',
@@ -82,6 +84,7 @@ export default function AdminProducts() {
             });
         }
         setFormError('');
+        setImageFile(null);
         setIsFormOpen(true);
     };
 
@@ -89,10 +92,52 @@ export default function AdminProducts() {
         e.preventDefault();
         setIsSubmitting(true);
         setFormError('');
+
+        let finalImageUrl = formData.image_url;
+
+        // 1. Upload image if a new file was selected
+        if (imageFile) {
+            setIsUploadingImage(true);
+            try {
+                const uploadData = new FormData();
+                // Most image APIs use 'image' or 'file' for the payload
+                uploadData.append('image', imageFile);
+                uploadData.append('file', imageFile);
+
+                // If postimage requires an API key, it's usually passed in the body or URL.
+                // For flexibility, if the user defines NEXT_PUBLIC_IMAGE_API_KEY we append it.
+                if (process.env.NEXT_PUBLIC_IMAGE_API_KEY) {
+                    uploadData.append('key', process.env.NEXT_PUBLIC_IMAGE_API_KEY);
+                }
+
+                const response = await fetch('https://api.postimage.org/1/upload', {
+                    method: 'POST',
+                    body: uploadData,
+                });
+
+                const result = await response.json();
+
+                // Typical API responses: result.url or result.data.url
+                if (result.url) {
+                    finalImageUrl = result.url;
+                } else if (result.data && result.data.url) {
+                    finalImageUrl = result.data.url;
+                } else {
+                    throw new Error("No se pudo obtener la URL de la imagen. Respuesta: " + JSON.stringify(result));
+                }
+            } catch (err: any) {
+                setFormError("Error subiendo la imagen: " + err.message);
+                setIsSubmitting(false);
+                setIsUploadingImage(false);
+                return;
+            }
+            setIsUploadingImage(false);
+        }
+
         try {
             const prodData = {
                 name: formData.name, description: formData.description, line: formData.line,
-                invima_registration: formData.invima_registration, status: formData.status, image_url: formData.image_url
+                invima_registration: formData.invima_registration, status: formData.status, image_url: finalImageUrl
             };
 
             let targetId = editingProduct?.id;
@@ -189,8 +234,22 @@ export default function AdminProducts() {
                                 </select>
                             </div>
                             <div style={{ gridColumn: '1 / -1' }}>
-                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.2rem' }}>URL de Imagen</label>
-                                <input type="url" value={formData.image_url} onChange={e => setFormData({ ...formData, image_url: e.target.value })} placeholder="https://..." style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--glass-border)' }} />
+                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.2rem' }}>Imagen del Producto</label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={e => {
+                                        if (e.target.files && e.target.files.length > 0) {
+                                            setImageFile(e.target.files[0]);
+                                        }
+                                    }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--glass-border)', backgroundColor: 'white' }}
+                                />
+                                {formData.image_url && !imageFile && (
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                                        Imagen actual guardada: <a href={formData.image_url} target="_blank" rel="noreferrer" style={{ color: 'var(--trust-blue)' }}>Ver imagen</a>
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.2rem' }}>Precio Final ($)</label>
@@ -211,10 +270,10 @@ export default function AdminProducts() {
                                     </div>
                                 )}
                                 <div style={{ display: 'flex', gap: '1rem' }}>
-                                    <button type="submit" className="button-primary" disabled={isSubmitting} style={{ opacity: isSubmitting ? 0.7 : 1 }}>
-                                        {isSubmitting ? 'Guardando...' : 'Guardar Producto'}
+                                    <button type="submit" className="button-primary" disabled={isSubmitting || isUploadingImage} style={{ opacity: (isSubmitting || isUploadingImage) ? 0.7 : 1 }}>
+                                        {isUploadingImage ? 'Subiendo imagen...' : isSubmitting ? 'Guardando...' : 'Guardar Producto'}
                                     </button>
-                                    <button type="button" onClick={() => setIsFormOpen(false)} style={{ padding: '0.5rem 1rem', border: '1px solid var(--glass-border)', borderRadius: '4px', backgroundColor: 'transparent', cursor: 'pointer' }} disabled={isSubmitting}>Cancelar</button>
+                                    <button type="button" onClick={() => setIsFormOpen(false)} style={{ padding: '0.5rem 1rem', border: '1px solid var(--glass-border)', borderRadius: '4px', backgroundColor: 'transparent', cursor: 'pointer' }} disabled={isSubmitting || isUploadingImage}>Cancelar</button>
                                 </div>
                             </div>
                         </form>
