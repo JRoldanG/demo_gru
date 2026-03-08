@@ -37,13 +37,9 @@ export default function ProductsPage() {
 
     useEffect(() => {
         if (!isInitializing) {
-            if (!isAuthenticated) {
-                router.push('/login');
-            } else {
-                fetchProducts();
-            }
+            fetchProducts();
         }
-    }, [isAuthenticated, isInitializing, router]);
+    }, [isAuthenticated, isInitializing]);
 
     const fetchProducts = async () => {
         setLoading(true);
@@ -56,32 +52,47 @@ export default function ProductsPage() {
 
             if (productsError) throw productsError;
 
-            // Fetch prices for the user's specific price tier
-            const tier = user?.priceTier || 'CLIENTE_FINAL';
-            const { data: pricesData, error: pricesError } = await supabase
-                .from('product_prices')
-                .select('product_id, price')
-                .eq('price_tier', tier);
+            let activeProducts: any[] = [];
 
-            if (pricesError) throw pricesError;
+            if (isAuthenticated) {
+                // Fetch prices for the user's specific price tier
+                const tier = user?.priceTier || 'CLIENTE_FINAL';
+                const { data: pricesData, error: pricesError } = await supabase
+                    .from('product_prices')
+                    .select('product_id, price')
+                    .eq('price_tier', tier);
 
-            // Map prices to products
-            const priceMap = new Map();
-            if (pricesData) {
-                pricesData.forEach(p => {
-                    priceMap.set(p.product_id, p.price);
-                });
+                if (pricesError) throw pricesError;
+
+                // Map prices to products
+                const priceMap = new Map();
+                if (pricesData) {
+                    pricesData.forEach(p => {
+                        priceMap.set(p.product_id, p.price);
+                    });
+                }
+
+                activeProducts = productsData?.filter(p => priceMap.has(p.id)).map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    description: p.description,
+                    price: priceMap.get(p.id),
+                    category: p.line,
+                    colSpanClass: "col-span-4",
+                    imageUrl: p.image_url
+                })) || [];
+            } else {
+                // For non-authenticated, skip prices and don't filter by `product_prices`
+                activeProducts = productsData?.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    description: p.description,
+                    price: 0,
+                    category: p.line,
+                    colSpanClass: "col-span-4",
+                    imageUrl: p.image_url
+                })) || [];
             }
-
-            const activeProducts = productsData?.filter(p => priceMap.has(p.id)).map(p => ({
-                id: p.id,
-                name: p.name,
-                description: p.description,
-                price: priceMap.get(p.id),
-                category: p.line,
-                colSpanClass: "col-span-4",
-                imageUrl: p.image_url
-            })) || [];
 
             setProductsList(activeProducts);
         } catch (error) {
@@ -91,7 +102,7 @@ export default function ProductsPage() {
         }
     };
 
-    if (loading || !isAuthenticated) {
+    if (loading) {
         return (
             <main style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'calc(248, 250, 252, 0.95)' }}>
                 <div style={{ textAlign: 'center' }}>
@@ -112,7 +123,10 @@ export default function ProductsPage() {
                         Catálogo de <span className="text-gradient-primary">Productos</span>
                     </h1>
                     <p className="text-sub" style={{ margin: 'var(--space-lg) auto', color: "var(--text-primary)", fontSize: "1.1rem", maxWidth: "100%" }}>
-                        Explora nuestra selecta gama de medicamentos y productos de investigación farmacéutica. Lista de precios asignada: <strong>{user?.priceTier?.replace('_', ' ')}</strong>.
+                        {isAuthenticated
+                            ? <>Explora nuestra selecta gama de medicamentos y productos de investigación farmacéutica. Lista de precios asignada: <strong>{user?.priceTier?.replace('_', ' ')}</strong>.</>
+                            : <>Inicia sesión o regístrate para ver nuestros precios y realizar pedidos.</>
+                        }
                     </p>
                 </div>
             </section>
@@ -133,7 +147,7 @@ export default function ProductsPage() {
                                 icon={getIconForLine(prod.category)}
                                 colSpanClass={prod.colSpanClass}
                                 imageUrl={prod.imageUrl}
-                                showCartAndPrice={true}
+                                showCartAndPrice={isAuthenticated}
                             />
                         ))
                     ) : (
