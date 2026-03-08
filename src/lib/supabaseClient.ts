@@ -11,9 +11,9 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
         detectSessionInUrl: true,
         // CRITICAL FIX: Disable web locks to prevent the "Lock broken by another request with the steal option" error in Next.js SSR
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        lock: (name: string, acquireTimeout: number, acquire: () => Promise<any>) => {
-            // Bypass Web Locks API to prevent the deadlocks on Vercel/Next.js SSR
+        lock: typeof window === 'undefined' ? (name: string, acquireTimeout: number, acquire: () => Promise<any>) => {
+            // Bypass Web Locks API ONLY on the server to prevent SSR deadlocks
             return acquire();
-        }
+        } : undefined
     }
 });

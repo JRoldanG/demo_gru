@@ -14,6 +14,7 @@ export default function AdminProducts() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [formError, setFormError] = useState('');
+    const [formTrace, setFormTrace] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedLine, setSelectedLine] = useState('');
@@ -23,6 +24,15 @@ export default function AdminProducts() {
         name: '', description: '', vademecum: '', line: '', invima_registration: '', status: 'Disponible', image_url: '',
         price_cliente: 0, price_accionista: 0, price_droguista: 0
     });
+
+    // Helper para evitar hangs infinitos
+    const withTimeout = async <T,>(promiseLike: PromiseLike<T>, ms: number = 10000): Promise<T> => {
+        let timer: NodeJS.Timeout;
+        const fallback = new Promise<T>((resolve, reject) => {
+            timer = setTimeout(() => reject(new Error('La operación tardó demasiado (Timeout)')), ms);
+        });
+        return Promise.race([Promise.resolve(promiseLike), fallback]).finally(() => clearTimeout(timer));
+    };
 
     const fetchProducts = async () => {
         setIsLoading(true);
@@ -85,6 +95,7 @@ export default function AdminProducts() {
             });
         }
         setFormError('');
+        setFormTrace('');
         setImageFile(null);
         setIsFormOpen(true);
     };
@@ -135,6 +146,7 @@ export default function AdminProducts() {
         }
 
         try {
+            setFormTrace('Guardando en la base de datos...');
             const prodData = {
                 name: formData.name, description: formData.description, vademecum: formData.vademecum, line: formData.line,
                 invima_registration: formData.invima_registration, status: formData.status, image_url: finalImageUrl,
@@ -144,7 +156,7 @@ export default function AdminProducts() {
             let targetId = editingProduct?.id;
 
             if (targetId) {
-                const { error: updateErr } = await supabase.from('products').update(prodData).eq('id', targetId);
+                const { error: updateErr } = await withTimeout(supabase.from('products').update(prodData).eq('id', targetId), 15000);
                 if (updateErr) {
                     console.error("Supabase Update Error:", updateErr);
                     setFormError("Error actualizando producto: " + updateErr.message);
@@ -152,7 +164,7 @@ export default function AdminProducts() {
                     return;
                 }
             } else {
-                const { data, error } = await supabase.from('products').insert([prodData]).select();
+                const { data, error } = await withTimeout(supabase.from('products').insert([prodData]).select(), 15000);
                 if (error) {
                     console.error("Supabase Insert Error:", error);
                     setFormError("Error creando producto: " + error.message);
@@ -162,11 +174,13 @@ export default function AdminProducts() {
                 if (data && data.length > 0) {
                     targetId = data[0].id;
                 } else {
-                    setFormError("Error: El producto se creó pero no se devolvió el ID.");
+                    setFormError("Error: El producto se creó en blanco (sin respuesta).");
                     setIsSubmitting(false);
                     return;
                 }
             }
+
+            setFormTrace('Asignando las listas de precios...');
 
             const prices = [
                 { product_id: targetId, price_tier: 'ACCIONISTA', price: formData.price_accionista },
@@ -174,17 +188,19 @@ export default function AdminProducts() {
             ];
 
             for (const p of prices) {
-                const { error: priceErr } = await supabase.from('product_prices').upsert(p, { onConflict: 'product_id,price_tier' });
+                const { error: priceErr } = await withTimeout(supabase.from('product_prices').upsert(p, { onConflict: 'product_id,price_tier' }), 10000);
                 if (priceErr) {
                     console.error("Error upserting price:", priceErr);
-                    // It might fail if the constraint doesn't exactly match
                 }
             }
 
+            setFormTrace('¡Finalizado! Refrescando vista...');
             setIsFormOpen(false);
+            setFormTrace('');
             fetchProducts();
         } catch (err: any) {
-            setFormError("Error inesperado: " + err.message);
+            console.error("Unexpected Error in handleSave:", err);
+            setFormError("Error inesperado en Supabase: " + (err.message || 'Desconocido'));
         } finally {
             setIsSubmitting(false);
         }
@@ -302,8 +318,13 @@ export default function AdminProducts() {
                                 <input required type="number" value={formData.price_droguista} onChange={e => setFormData({ ...formData, price_droguista: Number(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--glass-border)' }} />
                             </div>
                             <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '1rem', marginTop: '1rem', flexDirection: 'column' }}>
+                                {formTrace && !formError && (
+                                    <div style={{ padding: '0.75rem', backgroundColor: '#e0f2fe', color: '#0369a1', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #bae6fd' }}>
+                                        Estatus lógico: {formTrace}
+                                    </div>
+                                )}
                                 {formError && (
-                                    <div style={{ padding: '0.75rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '4px', fontSize: '0.9rem' }}>
+                                    <div style={{ padding: '0.75rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #fecaca' }}>
                                         {formError}
                                     </div>
                                 )}
