@@ -100,30 +100,28 @@ export default function AdminProducts() {
             setIsUploadingImage(true);
             try {
                 const uploadData = new FormData();
-                // Most image APIs use 'image' or 'file' for the payload
+                // ImgBB requires 'image'
                 uploadData.append('image', imageFile);
-                uploadData.append('file', imageFile);
 
-                // If postimage requires an API key, it's usually passed in the body or URL.
-                // For flexibility, if the user defines NEXT_PUBLIC_IMAGE_API_KEY we append it.
-                if (process.env.NEXT_PUBLIC_IMAGE_API_KEY) {
-                    uploadData.append('key', process.env.NEXT_PUBLIC_IMAGE_API_KEY);
+                // Use the API key provided in the environment variable
+                const apiKey = process.env.NEXT_PUBLIC_IMAGE_API_KEY;
+                if (!apiKey) {
+                    throw new Error("No se encontró la API Key de ImgBB (NEXT_PUBLIC_IMAGE_API_KEY)");
                 }
 
-                const response = await fetch('https://api.postimage.org/1/upload', {
+                // ImgBB expects the key in the URL query string
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
                     method: 'POST',
                     body: uploadData,
                 });
 
                 const result = await response.json();
 
-                // Typical API responses: result.url or result.data.url
-                if (result.url) {
-                    finalImageUrl = result.url;
-                } else if (result.data && result.data.url) {
+                // ImgBB specific response structure
+                if (result.success && result.data && result.data.url) {
                     finalImageUrl = result.data.url;
                 } else {
-                    throw new Error("No se pudo obtener la URL de la imagen. Respuesta: " + JSON.stringify(result));
+                    throw new Error("Error alojando la imagen en ImgBB. Detalles: " + (result.error?.message || JSON.stringify(result)));
                 }
             } catch (err: any) {
                 setFormError("Error subiendo la imagen: " + err.message);
