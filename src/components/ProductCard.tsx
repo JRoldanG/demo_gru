@@ -15,6 +15,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, icon, colSpanClass, imageUrl, showCartAndPrice = true }: ProductCardProps) {
     const { addToCart, getDiscountedPrice } = useCart();
     const [isAdded, setIsAdded] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
 
     const handleAdd = () => {
         addToCart(product);
@@ -39,8 +40,10 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
 
     return (
         <div
-            className={`glass-panel product-card ${colSpanClass} ${!imageUrl ? 'no-image' : ''} group`}
-            style={{ ...cardStyle, position: 'relative', overflow: 'hidden' }}
+            className={`glass-panel product-card ${colSpanClass} ${!imageUrl ? 'no-image' : ''}`}
+            style={{ ...cardStyle, position: 'relative', overflow: 'hidden', transform: 'none' }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
         >
             {/* Vademecum Overlay (appears on hover) */}
             {product.vademecum && (
@@ -52,13 +55,15 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        backgroundColor: 'rgba(15, 76, 129, 0.95)',
+                        backgroundColor: 'rgba(15, 76, 129, 0.98)',
                         backdropFilter: 'blur(8px)',
                         color: 'white',
                         padding: 'var(--space-lg)',
+                        paddingTop: 'calc(var(--space-lg) + 60px)',
                         zIndex: 10,
-                        opacity: 0,
-                        transition: 'opacity 0.3s ease',
+                        opacity: isHovered ? 1 : 0,
+                        visibility: isHovered ? 'visible' : 'hidden',
+                        transition: 'opacity 0.3s ease, visibility 0.3s ease',
                         display: 'flex',
                         flexDirection: 'column',
                         overflowY: 'auto',
@@ -75,30 +80,50 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
                 </div>
             )}
 
-            <style jsx>{`
-                /* Disable standard background zoom/darkening if vademecum exists, 
-                   since the overlay handles it */
-                .product-card.group:hover::before {
-                    opacity: ${product.vademecum ? '0.4' : '0.9'};
-                }
-                .product-card.group:hover .vademecum-overlay {
-                    opacity: 1;
-                }
-            `}</style>
-
-            <div className="product-card-header" style={{ position: 'relative', zIndex: 2 }}>
-                <div className="product-icon-wrapper" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    {icon}
-                    {product.vademecum && (
-                        <div title="Hover para ver detalles" style={{ display: 'flex', alignItems: 'center' }}>
-                            <Info size={20} style={{ color: 'var(--text-muted)' }} />
-                        </div>
+            <div className="product-card-header" style={{ position: 'relative', zIndex: 11 }}>
+                <div
+                    className="product-icon-wrapper"
+                    style={{
+                        display: 'flex',
+                        gap: '0.4rem',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: product.vademecum ? 'auto' : '56px',
+                        padding: product.vademecum ? '0 1rem' : '0'
+                    }}
+                >
+                    {product.vademecum ? (
+                        <>
+                            <Info size={22} style={{ color: 'var(--trust-blue)' }} />
+                            <span style={{ color: 'var(--trust-blue)', fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Detalle</span>
+                        </>
+                    ) : (
+                        icon
                     )}
                 </div>
-                {showCartAndPrice && <div className="product-price">{formattedPrice}</div>}
+                {showCartAndPrice && (
+                    <div
+                        className="product-price"
+                        style={{
+                            opacity: isHovered && product.vademecum ? 0 : 1,
+                            visibility: isHovered && product.vademecum ? 'hidden' : 'visible',
+                            transition: 'opacity 0.3s ease, visibility 0.3s ease'
+                        }}
+                    >
+                        {formattedPrice}
+                    </div>
+                )}
             </div>
 
-            <div className="product-info" style={{ position: 'relative', zIndex: 2 }}>
+            <div
+                className="product-info"
+                style={{
+                    position: 'relative',
+                    zIndex: 2,
+                    opacity: isHovered && product.vademecum ? 0 : 1,
+                    transition: 'opacity 0.3s ease'
+                }}
+            >
                 <p style={{ fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "0.5rem" }}>
                     {product.category}
                 </p>
@@ -110,6 +135,7 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
                 <button
                     className={`button-add-cart ${isAdded ? 'added' : ''}`}
                     onClick={handleAdd}
+                    style={{ position: 'relative', zIndex: 11, marginTop: 'auto' }}
                 >
                     {isAdded ? (
                         <>
