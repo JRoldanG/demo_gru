@@ -15,5 +15,8 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
             // Bypass Web Locks API ONLY on the server to prevent SSR deadlocks
             return acquire();
         } : undefined
+    },
+    global: {
+        fetch: (...args) => fetch(...args)
     }
 });

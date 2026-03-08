@@ -110,6 +110,7 @@ export default function AdminProducts() {
         // 1. Upload image if a new file was selected
         if (imageFile) {
             setIsUploadingImage(true);
+            setFormTrace('Iniciando subida de imagen a ImgBB...');
             try {
                 const uploadData = new FormData();
                 // ImgBB requires 'image'
@@ -121,17 +122,20 @@ export default function AdminProducts() {
                     throw new Error("No se encontró la API Key de ImgBB (NEXT_PUBLIC_IMAGE_API_KEY)");
                 }
 
+                setFormTrace('Contactando API de ImgBB...');
                 // ImgBB expects the key in the URL query string
                 const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
                     method: 'POST',
                     body: uploadData,
                 });
 
+                setFormTrace('Respuesta de ImgBB recibida. Leyendo JSON...');
                 const result = await response.json();
 
                 // ImgBB specific response structure
                 if (result.success && result.data && result.data.url) {
                     finalImageUrl = result.data.url;
+                    setFormTrace('Imagen subida con éxito: ' + finalImageUrl);
                 } else {
                     throw new Error("Error alojando la imagen en ImgBB. Detalles: " + (result.error?.message || JSON.stringify(result)));
                 }
@@ -140,13 +144,14 @@ export default function AdminProducts() {
                 setFormError("Error subiendo la imagen: " + err.message);
                 setIsSubmitting(false);
                 setIsUploadingImage(false);
+                setFormTrace('');
                 return;
             }
             setIsUploadingImage(false);
         }
 
         try {
-            setFormTrace('Guardando en la base de datos...');
+            setFormTrace('Guardando en la base de datos (Supabase)...');
             const prodData = {
                 name: formData.name, description: formData.description, vademecum: formData.vademecum, line: formData.line,
                 invima_registration: formData.invima_registration, status: formData.status, image_url: finalImageUrl,
