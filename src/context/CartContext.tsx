@@ -82,12 +82,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const clearCart = () => setItems([]);
 
     const getDiscountedPrice = (basePrice: number) => {
-        if (!user) return basePrice;
-        switch (user.priceTier) {
-            case 'ACCIONISTA': return basePrice * 0.8; // 20% discount
-            case 'DROGUISTA': return basePrice * 0.9;  // 10% discount
-            default: return basePrice;
-        }
+        // The price is already tier-specific from the database. No extra math needed.
+        return basePrice;
     };
 
     const cartTotal = items.reduce((total, item) => total + (getDiscountedPrice(item.price) * item.quantity), 0);
