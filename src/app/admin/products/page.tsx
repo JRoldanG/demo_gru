@@ -104,26 +104,23 @@ export default function AdminProducts() {
         e.preventDefault();
         setIsSubmitting(true);
         setFormError('');
+        setFormTrace('');
 
-        let finalImageUrl = formData.image_url;
+        try {
+            let finalImageUrl = formData.image_url;
 
-        // 1. Upload image if a new file was selected
-        if (imageFile) {
-            setIsUploadingImage(true);
-            setFormTrace('Iniciando subida de imagen a ImgBB...');
-            try {
+            // 1. Upload image if a new file was selected
+            if (imageFile) {
+                setIsUploadingImage(true);
+                setFormTrace('Iniciando subida de imagen a ImgBB...');
+
                 const uploadData = new FormData();
-                // ImgBB requires 'image'
                 uploadData.append('image', imageFile);
 
-                // Use the API key provided in the environment variable
                 const apiKey = process.env.NEXT_PUBLIC_IMAGE_API_KEY;
-                if (!apiKey) {
-                    throw new Error("No se encontró la API Key de ImgBB (NEXT_PUBLIC_IMAGE_API_KEY)");
-                }
+                if (!apiKey) throw new Error("No se encontró la API Key de ImgBB (NEXT_PUBLIC_IMAGE_API_KEY)");
 
                 setFormTrace('Contactando API de ImgBB...');
-                // ImgBB expects the key in the URL query string
                 const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
                     method: 'POST',
                     body: uploadData,
@@ -132,25 +129,18 @@ export default function AdminProducts() {
                 setFormTrace('Respuesta de ImgBB recibida. Leyendo JSON...');
                 const result = await response.json();
 
-                // ImgBB specific response structure
                 if (result.success && result.data && result.data.url) {
                     finalImageUrl = result.data.url;
                     setFormTrace('Imagen subida con éxito: ' + finalImageUrl);
                 } else {
                     throw new Error("Error alojando la imagen en ImgBB. Detalles: " + (result.error?.message || JSON.stringify(result)));
                 }
-            } catch (err: any) {
-                console.error("ImgBB Catch Error:", err);
-                setFormError("Error subiendo la imagen: " + err.message);
-                setIsSubmitting(false);
-                setIsUploadingImage(false);
-                setFormTrace('');
-                return;
-            }
-            setIsUploadingImage(false);
-        }
 
-        try {
+                // Done uploading image, immediately reset state so UI shows "Guardando..."
+                setIsUploadingImage(false);
+            }
+
+            // 2. Save product to Supabase
             setFormTrace('Guardando en la base de datos (Supabase)...');
             const prodData = {
                 name: formData.name, description: formData.description, vademecum: formData.vademecum, line: formData.line,
@@ -159,55 +149,72 @@ export default function AdminProducts() {
             };
 
             let targetId = editingProduct?.id;
+            const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+            // BULLETPROOF: Bypassing Supabase JS Client entirely to avoid React/Vercel promise lock deadlocks
+            let token = sbKey;
+            try {
+                const sessionStr = localStorage.getItem('gruinfacol-auth-token');
+                if (sessionStr) {
+                    const sessionData = JSON.parse(sessionStr);
+                    if (sessionData && sessionData.access_token) {
+                        token = sessionData.access_token;
+                    }
+                }
+            } catch (e) { }
+
+            const fetchHeaders = {
+                'Content-Type': 'application/json',
+                'apikey': sbKey as string,
+                'Authorization': `Bearer ${token}`
+            };
 
             if (targetId) {
-                const { error: updateErr } = await withTimeout(supabase.from('products').update(prodData).eq('id', targetId), 15000);
-                if (updateErr) {
-                    console.error("Supabase Update Error:", updateErr);
-                    setFormError("Error actualizando producto: " + updateErr.message);
-                    setIsSubmitting(false);
-                    return;
-                }
+                const res = await fetch(`${sbUrl}/rest/v1/products?id=eq.${targetId}`, {
+                    method: 'PATCH',
+                    headers: fetchHeaders,
+                    body: JSON.stringify(prodData)
+                });
+                if (!res.ok) throw new Error("Error actualizando producto: " + await res.text());
             } else {
-                const { data, error } = await withTimeout(supabase.from('products').insert([prodData]).select(), 15000);
-                if (error) {
-                    console.error("Supabase Insert Error:", error);
-                    setFormError("Error creando producto: " + error.message);
-                    setIsSubmitting(false);
-                    return;
-                }
-                if (data && data.length > 0) {
-                    targetId = data[0].id;
-                } else {
-                    setFormError("Error: El producto se creó en blanco (sin respuesta).");
-                    setIsSubmitting(false);
-                    return;
-                }
+                const res = await fetch(`${sbUrl}/rest/v1/products`, {
+                    method: 'POST',
+                    headers: { ...fetchHeaders, 'Prefer': 'return=representation' },
+                    body: JSON.stringify(prodData)
+                });
+                if (!res.ok) throw new Error("Error creando producto: " + await res.text());
+                const data = await res.json();
+                if (!data || data.length === 0) throw new Error("Error: El producto se creó en blanco.");
+                targetId = data[0].id;
             }
 
+            // 3. Save Prices
             setFormTrace('Asignando las listas de precios...');
-
             const prices = [
                 { product_id: targetId, price_tier: 'ACCIONISTA', price: formData.price_accionista },
                 { product_id: targetId, price_tier: 'DROGUISTA', price: formData.price_droguista }
             ];
 
-            for (const p of prices) {
-                const { error: priceErr } = await withTimeout(supabase.from('product_prices').upsert(p, { onConflict: 'product_id,price_tier' }), 10000);
-                if (priceErr) {
-                    console.error("Error upserting price:", priceErr);
-                }
-            }
+            const priceRes = await fetch(`${sbUrl}/rest/v1/product_prices`, {
+                method: 'POST',
+                headers: { ...fetchHeaders, 'Prefer': 'resolution=merge-duplicates' },
+                body: JSON.stringify(prices)
+            });
+            if (!priceRes.ok) console.error("Error upserting price:", await priceRes.text());
 
+            // 4. Success
             setFormTrace('¡Finalizado! Refrescando vista...');
             setIsFormOpen(false);
             setFormTrace('');
             fetchProducts();
+
         } catch (err: any) {
-            console.error("Unexpected Error in handleSave:", err);
-            setFormError("Error inesperado en Supabase: " + (err.message || 'Desconocido'));
+            console.error("Catch Error in handleSave:", err);
+            setFormError(err.message || 'Error Desconocido');
         } finally {
             setIsSubmitting(false);
+            setIsUploadingImage(false);
         }
     };
 
