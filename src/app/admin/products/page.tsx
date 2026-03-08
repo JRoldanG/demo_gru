@@ -196,7 +196,7 @@ export default function AdminProducts() {
                 { product_id: targetId, price_tier: 'DROGUISTA', price: formData.price_droguista }
             ];
 
-            const priceRes = await fetch(`${sbUrl}/rest/v1/product_prices`, {
+            const priceRes = await fetch(`${sbUrl}/rest/v1/product_prices?on_conflict=product_id,price_tier`, {
                 method: 'POST',
                 headers: { ...fetchHeaders, 'Prefer': 'resolution=merge-duplicates' },
                 body: JSON.stringify(prices)
