@@ -8,6 +8,12 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
         storageKey: 'gruinfacol-auth-token',
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: true,
+        // CRITICAL FIX: Disable web locks to prevent the "Lock broken by another request with the steal option" error in Next.js SSR
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        lock: (name: string, acquireTimeout: number, acquire: () => Promise<any>) => {
+            // Bypass Web Locks API to prevent the deadlocks on Vercel/Next.js SSR
+            return acquire();
+        }
     }
 });
