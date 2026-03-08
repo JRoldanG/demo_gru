@@ -19,7 +19,7 @@ export default function AdminProducts() {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [editingProduct, setEditingProduct] = useState<any>(null);
     const [formData, setFormData] = useState({
-        name: '', description: '', line: '', invima_registration: '', status: 'Disponible', image_url: '',
+        name: '', description: '', vademecum: '', line: '', invima_registration: '', status: 'Disponible', image_url: '',
         price_cliente: 0, price_accionista: 0, price_droguista: 0
     });
 
@@ -72,14 +72,14 @@ export default function AdminProducts() {
         if (prod) {
             setEditingProduct(prod);
             setFormData({
-                name: prod.name, description: prod.description, line: prod.line,
+                name: prod.name, description: prod.description, vademecum: prod.vademecum || '', line: prod.line,
                 invima_registration: prod.invima_registration, status: prod.status, image_url: prod.image_url || '',
                 price_cliente: prod.price_cliente, price_accionista: prod.price_accionista, price_droguista: prod.price_droguista
             });
         } else {
             setEditingProduct(null);
             setFormData({
-                name: '', description: '', line: '', invima_registration: '', status: 'Disponible', image_url: '',
+                name: '', description: '', vademecum: '', line: '', invima_registration: '', status: 'Disponible', image_url: '',
                 price_cliente: 0, price_accionista: 0, price_droguista: 0
             });
         }
@@ -134,7 +134,7 @@ export default function AdminProducts() {
 
         try {
             const prodData = {
-                name: formData.name, description: formData.description, line: formData.line,
+                name: formData.name, description: formData.description, vademecum: formData.vademecum, line: formData.line,
                 invima_registration: formData.invima_registration, status: formData.status, image_url: finalImageUrl
             };
 
@@ -217,8 +217,12 @@ export default function AdminProducts() {
                                 <input required type="text" value={formData.line} onChange={e => setFormData({ ...formData, line: e.target.value })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--glass-border)' }} />
                             </div>
                             <div style={{ gridColumn: '1 / -1' }}>
-                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.2rem' }}>Descripción</label>
-                                <textarea required value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--glass-border)' }} />
+                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.2rem' }}>Descripción (Corta)</label>
+                                <textarea required value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--glass-border)', minHeight: '60px' }} />
+                            </div>
+                            <div style={{ gridColumn: '1 / -1' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.2rem' }}>Vademécum / Detalles Especializados (Opcional)</label>
+                                <textarea value={formData.vademecum} onChange={e => setFormData({ ...formData, vademecum: e.target.value })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--glass-border)', minHeight: '120px' }} placeholder="Ingrese información detallada, contraindicaciones, posología, etc." />
                             </div>
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.2rem' }}>Reg Invima</label>

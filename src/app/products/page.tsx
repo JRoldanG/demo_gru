@@ -78,6 +78,7 @@ export default function ProductsPage() {
                     id: p.id,
                     name: p.name,
                     description: p.description,
+                    vademecum: p.vademecum,
                     price: priceMap.get(p.id),
                     category: p.line,
                     colSpanClass: "col-span-4",
@@ -89,6 +90,7 @@ export default function ProductsPage() {
                     id: p.id,
                     name: p.name,
                     description: p.description,
+                    vademecum: p.vademecum,
                     price: 0,
                     category: p.line,
                     colSpanClass: "col-span-4",
@@ -223,6 +225,7 @@ export default function ProductsPage() {
                                     id: prod.id,
                                     name: prod.name,
                                     description: prod.description,
+                                    vademecum: prod.vademecum,
                                     price: prod.price, // the specific tier price we fetched
                                     category: prod.category
                                 }}
