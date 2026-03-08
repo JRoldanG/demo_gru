@@ -94,8 +94,8 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
                 >
                     {product.vademecum ? (
                         <>
-                            <Info size={22} style={{ color: 'var(--trust-blue)' }} />
-                            <span style={{ color: 'var(--trust-blue)', fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Detalle</span>
+                            <Info size={16} style={{ color: 'var(--trust-blue)' }} />
+                            <span style={{ color: 'var(--trust-blue)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Detalle</span>
                         </>
                     ) : (
                         icon

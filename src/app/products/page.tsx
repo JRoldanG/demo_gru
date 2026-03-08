@@ -54,48 +54,38 @@ export default function ProductsPage() {
 
             if (productsError) throw productsError;
 
-            let activeProducts: any[] = [];
+            // Base products mapped (everyone is considered Cliente Final primarily).
+            let activeProducts: any[] = productsData?.map(p => ({
+                id: p.id,
+                name: p.name,
+                description: p.description,
+                vademecum: p.vademecum,
+                price: p.price || 0, // Base price
+                category: p.line,
+                colSpanClass: "col-span-4",
+                imageUrl: p.image_url
+            })) || [];
 
-            if (isAuthenticated) {
-                // Fetch prices for the user's specific price tier
-                const tier = user?.priceTier || 'CLIENTE_FINAL';
+            // If authenticated and HAS a special tier, override the price with `product_prices`
+            if (isAuthenticated && user?.priceTier && user.priceTier !== 'CLIENTE_FINAL') {
                 const { data: pricesData, error: pricesError } = await supabase
                     .from('product_prices')
                     .select('product_id, price')
-                    .eq('price_tier', tier);
+                    .eq('price_tier', user.priceTier);
 
-                if (pricesError) throw pricesError;
-
-                // Map prices to products
-                const priceMap = new Map();
-                if (pricesData) {
+                if (!pricesError && pricesData) {
+                    const priceMap = new Map();
                     pricesData.forEach(p => {
                         priceMap.set(p.product_id, p.price);
                     });
-                }
 
-                activeProducts = productsData?.filter(p => priceMap.has(p.id)).map(p => ({
-                    id: p.id,
-                    name: p.name,
-                    description: p.description,
-                    vademecum: p.vademecum,
-                    price: priceMap.get(p.id),
-                    category: p.line,
-                    colSpanClass: "col-span-4",
-                    imageUrl: p.image_url
-                })) || [];
-            } else {
-                // For non-authenticated, skip prices and don't filter by `product_prices`
-                activeProducts = productsData?.map(p => ({
-                    id: p.id,
-                    name: p.name,
-                    description: p.description,
-                    vademecum: p.vademecum,
-                    price: 0,
-                    category: p.line,
-                    colSpanClass: "col-span-4",
-                    imageUrl: p.image_url
-                })) || [];
+                    activeProducts = activeProducts.map(p => {
+                        if (priceMap.has(p.id)) {
+                            return { ...p, price: priceMap.get(p.id) };
+                        }
+                        return p;
+                    });
+                }
             }
 
             setProductsList(activeProducts);
@@ -144,7 +134,7 @@ export default function ProductsPage() {
                     <p className="text-sub" style={{ margin: 'var(--space-lg) auto', color: "var(--text-primary)", fontSize: "1.1rem", maxWidth: "100%" }}>
                         {isAuthenticated
                             ? <>Explora nuestra selecta gama de medicamentos y productos de investigación farmacéutica. Lista de precios asignada: <strong>{user?.priceTier?.replace('_', ' ')}</strong>.</>
-                            : <>Inicia sesión o regístrate para ver nuestros precios y realizar pedidos.</>
+                            : <>Explora nuestra selecta gama de medicamentos y productos de investigación farmacéutica.</>
                         }
                     </p>
                 </div>
@@ -232,7 +222,7 @@ export default function ProductsPage() {
                                 icon={getIconForLine(prod.category)}
                                 colSpanClass={prod.colSpanClass}
                                 imageUrl={prod.imageUrl}
-                                showCartAndPrice={isAuthenticated}
+                                showCartAndPrice={true}
                             />
                         ))
                     ) : (

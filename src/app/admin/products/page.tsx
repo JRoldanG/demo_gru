@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
-import { ShieldAlert, ArrowLeft, Plus, Edit, Trash2 } from 'lucide-react';
+import { ShieldAlert, ArrowLeft, Plus, Edit, Trash2, Search } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminProducts() {
@@ -14,8 +14,8 @@ export default function AdminProducts() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [formError, setFormError] = useState('');
-
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [editingProduct, setEditingProduct] = useState<any>(null);
     const [formData, setFormData] = useState({
@@ -36,7 +36,7 @@ export default function AdminProducts() {
                 const myPrices = prices.filter(pr => pr.product_id === p.id);
                 return {
                     ...p,
-                    price_cliente: myPrices.find(pr => pr.price_tier === 'CLIENTE_FINAL')?.price || 0,
+                    price_cliente: p.price || 0, // Fallback to p.price for base client price
                     price_accionista: myPrices.find(pr => pr.price_tier === 'ACCIONISTA')?.price || 0,
                     price_droguista: myPrices.find(pr => pr.price_tier === 'DROGUISTA')?.price || 0,
                 };
@@ -135,7 +135,8 @@ export default function AdminProducts() {
         try {
             const prodData = {
                 name: formData.name, description: formData.description, vademecum: formData.vademecum, line: formData.line,
-                invima_registration: formData.invima_registration, status: formData.status, image_url: finalImageUrl
+                invima_registration: formData.invima_registration, status: formData.status, image_url: finalImageUrl,
+                price: formData.price_cliente
             };
 
             let targetId = editingProduct?.id;
@@ -158,7 +159,6 @@ export default function AdminProducts() {
             }
 
             const prices = [
-                { product_id: targetId, price_tier: 'CLIENTE_FINAL', price: formData.price_cliente },
                 { product_id: targetId, price_tier: 'ACCIONISTA', price: formData.price_accionista },
                 { product_id: targetId, price_tier: 'DROGUISTA', price: formData.price_droguista }
             ];
@@ -186,6 +186,11 @@ export default function AdminProducts() {
             fetchProducts();
         }
     };
+
+    const filteredProducts = productsList.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.line.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <main style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', paddingTop: 'calc(100px + var(--space-xl))', paddingBottom: 'var(--space-3xl)' }}>
@@ -237,21 +242,34 @@ export default function AdminProducts() {
                             </div>
                             <div style={{ gridColumn: '1 / -1' }}>
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.2rem' }}>Imagen del Producto</label>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={e => {
-                                        if (e.target.files && e.target.files.length > 0) {
-                                            setImageFile(e.target.files[0]);
-                                        }
-                                    }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--glass-border)', backgroundColor: 'white' }}
-                                />
-                                {formData.image_url && !imageFile && (
-                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-                                        Imagen actual guardada: <a href={formData.image_url} target="_blank" rel="noreferrer" style={{ color: 'var(--trust-blue)' }}>Ver imagen</a>
-                                    </p>
-                                )}
+
+                                {formData.image_url ? (
+                                    <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'var(--bg-surface)', borderRadius: '8px', border: '1px dashed var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Imagen actual guardada:</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <img src={formData.image_url} alt="Producto" style={{ width: '60px', height: '60px', objectFit: 'contain', backgroundColor: 'white', borderRadius: '4px', border: '1px solid var(--glass-border)' }} />
+                                            <a href={formData.image_url} target="_blank" rel="noreferrer" style={{ color: 'var(--trust-blue)', textDecoration: 'underline', fontSize: '0.9rem' }}>Ver imagen</a>
+                                        </div>
+                                    </div>
+                                ) : null}
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        id="imageUpload"
+                                        onChange={e => {
+                                            if (e.target.files && e.target.files.length > 0) {
+                                                setImageFile(e.target.files[0]);
+                                            }
+                                        }}
+                                        style={{ display: 'none' }}
+                                    />
+                                    <label htmlFor="imageUpload" className="button-primary" style={{ display: 'inline-flex', padding: '0.5rem 1rem', fontSize: '0.9rem', cursor: 'pointer', backgroundColor: imageFile ? 'var(--accent-teal)' : 'var(--trust-blue)', margin: 0 }}>
+                                        {imageFile ? 'Imagen seleccionada' : formData.image_url ? 'Seleccionar otra imagen' : 'Seleccionar imagen'}
+                                    </label>
+                                    {imageFile && <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{imageFile.name}</span>}
+                                </div>
                             </div>
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.2rem' }}>Precio Final ($)</label>
@@ -296,7 +314,7 @@ export default function AdminProducts() {
                         <tbody>
                             {isLoading ? (
                                 <tr><td colSpan={5} style={{ padding: '2rem', textAlign: 'center' }}>Cargando...</td></tr>
-                            ) : productsList.map(p => (
+                            ) : filteredProducts.map(p => (
                                 <tr key={p.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
                                     <td style={{ padding: '1rem 0.5rem', fontWeight: 600 }}>{p.name}</td>
                                     <td style={{ padding: '1rem 0.5rem', color: 'var(--text-secondary)' }}>{p.line}</td>

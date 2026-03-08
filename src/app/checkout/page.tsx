@@ -12,12 +12,7 @@ export default function CheckoutPage() {
     const { user, isAuthenticated, isInitializing } = useAuth();
     const router = useRouter();
 
-    useEffect(() => {
-        if (!isInitializing && !isAuthenticated) {
-            router.push('/login');
-        }
-    }, [isInitializing, isAuthenticated, router]);
-
+    const [isGuestCheckout, setIsGuestCheckout] = useState(false);
     const [formData, setFormData] = useState({
         name: user?.name || '',
         email: user?.email || '',
@@ -65,7 +60,7 @@ export default function CheckoutPage() {
             const { data: orderData, error: orderError } = await supabase
                 .from('orders')
                 .insert([{
-                    user_id: user?.id,
+                    user_id: user?.id || null,
                     status: 'Pendiente',
                     dispatch_info: '',
                     total: cartTotal
@@ -124,6 +119,43 @@ export default function CheckoutPage() {
         minimumFractionDigits: 0
     }).format(cartTotal);
 
+    if (!isInitializing && !isAuthenticated && !isGuestCheckout) {
+        return (
+            <main style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', paddingTop: 'calc(var(--space-3xl) * 1.5)', paddingBottom: 'var(--space-3xl)' }}>
+                <div className="container" style={{ maxWidth: '600px', textAlign: 'center' }}>
+                    <div style={{ marginBottom: 'var(--space-xl)' }}>
+                        <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--trust-blue)', fontWeight: 500, transition: 'var(--transition-fast)' }} onMouseOver={(e: any) => e.currentTarget.style.color = 'var(--trust-blue-light)'} onMouseOut={(e: any) => e.currentTarget.style.color = 'var(--trust-blue)'}>
+                            <ArrowLeft size={20} /> Volver a la Tienda
+                        </a>
+                    </div>
+                    <div className="glass-panel" style={{ padding: 'var(--space-2xl)' }}>
+                        <User size={64} style={{ color: 'var(--trust-blue)', margin: '0 auto var(--space-md)' }} />
+                        <h2 style={{ fontSize: '2rem', color: 'var(--text-primary)', marginBottom: 'var(--space-sm)' }}>¿Cómo deseas continuar?</h2>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-xl)' }}>
+                            Puedes iniciar sesión para acceder a tus listas de precios, o continuar como invitado para compras al detal.
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <button onClick={() => router.push('/login')} className="button-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem' }}>
+                                Iniciar Sesión
+                            </button>
+                            <button onClick={() => router.push('/register')} className="button-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', backgroundColor: 'var(--bg-surface)', color: 'var(--trust-blue)', border: '1px solid var(--trust-blue)' }}>
+                                Registrarse
+                            </button>
+                            <div style={{ margin: '1rem 0', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--glass-border)' }}></div>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>o</span>
+                                <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--glass-border)' }}></div>
+                            </div>
+                            <button onClick={() => setIsGuestCheckout(true)} style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline' }}>
+                                Continuar sin registrarse
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        );
+    }
     return (
         <main style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', paddingTop: 'calc(var(--space-3xl) * 1.5)', paddingBottom: 'var(--space-3xl)' }}>
             <div className="container" style={{ maxWidth: '1200px' }}>

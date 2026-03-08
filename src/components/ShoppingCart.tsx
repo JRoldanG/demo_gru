@@ -93,7 +93,7 @@ export default function ShoppingCartDrawer() {
                                 router.push('/checkout');
                             }}
                         >
-                            Proceder al Pago
+                            Generar Orden
                         </button>
 
                         <button

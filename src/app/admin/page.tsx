@@ -146,9 +146,9 @@ export default function AdminDashboard() {
                                                             color: 'var(--trust-blue)'
                                                         }}
                                                     >
-                                                        <option value="CLIENTE_FINAL">Cliente Final ($ 0 dscto)</option>
-                                                        <option value="ACCIONISTA">Accionista (-20%)</option>
-                                                        <option value="DROGUISTA">Droguista (-10%)</option>
+                                                        <option value="CLIENTE_FINAL">Cliente Final</option>
+                                                        <option value="ACCIONISTA">Accionista</option>
+                                                        <option value="DROGUISTA">Droguista</option>
                                                     </select>
                                                 </td>
                                             </tr>
