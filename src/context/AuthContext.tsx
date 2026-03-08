@@ -69,43 +69,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         let mounted = true;
 
-        const initSession = async () => {
+        const initializeAuth = async () => {
             try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                if (session?.user) {
-                    await fetchProfile(session.user.id);
-                } else {
-                    setUser(null);
+                // First, set up the listener to catch the initial session event or any fast changes
+                const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+                    if (!mounted) return;
+
+                    if (session?.user) {
+                        await fetchProfile(session.user.id);
+                    } else {
+                        setUser(null);
+                    }
+                    setIsInitializing(false);
+                });
+
+                // In some Next.js environments, the INITIAL_SESSION event fires before we can listen to it.
+                // We double-check here just in case.
+                const { data: { session } } = await supabase.auth.getSession();
+
+                if (mounted) {
+                    if (session?.user) {
+                        await fetchProfile(session.user.id);
+                    } else {
+                        setUser(null);
+                    }
+                    setIsInitializing(false);
                 }
+
+                return subscription;
             } catch (err) {
-                console.error("Error initSession:", err);
-                setUser(null);
-            } finally {
-                if (mounted) setIsInitializing(false);
+                console.error("Auth context error:", err);
+                if (mounted) {
+                    setUser(null);
+                    setIsInitializing(false);
+                }
+                return null;
             }
         };
 
-        // Listen for auth state changes (login, logout, and the INITIAL_SESSION on mount)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            try {
-                if (event === 'INITIAL_SESSION') return;
-                if (session?.user) {
-                    await fetchProfile(session.user.id);
-                } else {
-                    setUser(null);
-                }
-            } catch (err) {
-                console.error("Error auth change:", err);
-            } finally {
-                if (mounted) setIsInitializing(false);
-            }
+        let activeSubscription: any = null;
+        initializeAuth().then(sub => {
+            activeSubscription = sub;
         });
-
-        initSession();
 
         return () => {
             mounted = false;
-            subscription.unsubscribe();
+            if (activeSubscription) {
+                activeSubscription.unsubscribe();
+            }
         };
     }, []);
 

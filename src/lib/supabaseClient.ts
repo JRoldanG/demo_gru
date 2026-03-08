@@ -6,5 +6,8 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-an
 export const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: {
         storageKey: 'gruinfacol-auth-token',
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
     }
 });
