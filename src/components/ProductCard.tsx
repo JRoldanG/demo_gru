@@ -43,7 +43,7 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
     return (
         <div
             className={`glass-panel product-card ${colSpanClass} ${!imageUrl ? 'no-image' : ''}`}
-            style={{ ...cardStyle, position: 'relative', overflow: 'hidden', transform: 'translateY(0)', transition: 'box-shadow 0.3s ease', display: 'flex', flexDirection: 'column', minHeight: '320px', padding: 0, backgroundSize: '80%', backgroundPosition: 'center -50px' }}
+            style={{ ...cardStyle, position: 'relative', overflow: 'hidden', transform: 'translateY(0)', transition: 'box-shadow 0.3s ease', display: 'flex', flexDirection: 'column', minHeight: '320px', padding: 0, backgroundSize: '72%', backgroundPosition: 'center -70px' }}
         >
             <div style={{ flexGrow: 1, minHeight: '180px' }}></div>
 
@@ -52,7 +52,7 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
                 style={{
                     position: 'relative',
                     zIndex: 2,
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 60%, transparent 100%)',
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 30%, transparent 60%)',
                     padding: 'var(--space-md)',
                     paddingTop: '3rem',
                     display: 'flex',
@@ -71,7 +71,7 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
                             borderRadius: 'var(--radius-full)',
                             color: 'white',
                             fontWeight: 'bold',
-                            fontSize: '1.25rem',
+                            fontSize: '1rem',
                             marginBottom: '0.25rem'
                         }}
                     >
