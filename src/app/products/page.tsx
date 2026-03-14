@@ -43,6 +43,19 @@ export default function ProductsPage() {
         }
     }, [isAuthenticated, isInitializing]);
 
+    // Restore scroll position after loading products
+    useEffect(() => {
+        if (!loading) {
+            const savedScroll = sessionStorage.getItem('products_scroll_pos');
+            if (savedScroll) {
+                // Pequeño timeout para asegurar que el DOM ya pintó el grid
+                setTimeout(() => {
+                    window.scrollTo({ top: parseInt(savedScroll), behavior: 'instant' });
+                }, 100);
+            }
+        }
+    }, [loading]);
+
     const fetchProducts = async () => {
         setLoading(true);
         try {
@@ -206,26 +219,53 @@ export default function ProductsPage() {
             </section>
 
             <section className="container section" style={{ paddingTop: 0, minHeight: '50vh' }}>
-                <div className="bento-grid">
-                    {filteredProducts.length > 0 ? (
-                        filteredProducts.map((prod) => (
-                            <ProductCard
-                                key={prod.id}
-                                product={{
-                                    id: prod.id,
-                                    name: prod.name,
-                                    description: prod.description,
-                                    vademecum: prod.vademecum,
-                                    price: prod.price, // the specific tier price we fetched
-                                    category: prod.category
-                                }}
-                                icon={getIconForLine(prod.category)}
-                                colSpanClass={prod.colSpanClass}
-                                imageUrl={prod.imageUrl}
-                                showCartAndPrice={true}
-                            />
-                        ))
-                    ) : (
+                {filteredProducts.length > 0 ? (
+                    // 1. Obtenemos las categorías únicas dentro de los productos filtrados, ignorando 'Todas'
+                    Array.from(new Set(filteredProducts.map(p => p.category)))
+                        .filter(cat => cat !== 'Todas')
+                        .sort((a, b) => a.localeCompare(b)) // Orden alfabético
+                        .map((category) => {
+                            // 2. Filtramos los productos que pertenecen a esta categoría
+                            const categoryProducts = filteredProducts.filter(p => p.category === category);
+                            
+                            // 3. Renderizamos la sección de esta categoría concreta con su propio Grid
+                            return (
+                                <div key={category} style={{ marginBottom: '4rem' }}>
+                                    <h2 style={{ 
+                                        fontSize: '2rem', 
+                                        color: 'var(--trust-blue)', 
+                                        marginBottom: '1.5rem',
+                                        borderBottom: '2px solid var(--glass-border)',
+                                        paddingBottom: '0.5rem',
+                                        display: 'inline-block',
+                                        textTransform: 'uppercase'
+                                    }}>
+                                        LÍNEA {category}
+                                    </h2>
+                                    <div className="bento-grid">
+                                        {categoryProducts.map((prod) => (
+                                            <ProductCard
+                                                key={prod.id}
+                                                product={{
+                                                    id: prod.id,
+                                                    name: prod.name,
+                                                    description: prod.description,
+                                                    vademecum: prod.vademecum,
+                                                    price: prod.price, 
+                                                    category: prod.category
+                                                }}
+                                                icon={getIconForLine(prod.category)}
+                                                colSpanClass={prod.colSpanClass}
+                                                imageUrl={prod.imageUrl}
+                                                showCartAndPrice={true}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })
+                ) : (
+                    <div className="bento-grid">
                         <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
                             <Search size={48} style={{ opacity: 0.2, margin: '0 auto 1rem' }} />
                             <p>No se encontraron productos que coincidan con tu búsqueda.</p>
@@ -248,8 +288,8 @@ export default function ProductsPage() {
                                 </button>
                             )}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </section>
         </main>
     );

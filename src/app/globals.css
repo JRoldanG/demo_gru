@@ -218,8 +218,10 @@ a {
   justify-content: space-between;
   padding: var(--space-lg);
   z-index: 2;
-  background-size: cover;
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: center;
+  background-color: var(--bg-surface);
   color: white;
   /* Text defaults to white over images */
 }
@@ -298,7 +300,7 @@ a {
 }
 
 .product-info h3 {
-  font-size: 1.75rem;
+  font-size: 1.25rem;
   margin-bottom: var(--space-xs);
   position: relative;
   z-index: 2;

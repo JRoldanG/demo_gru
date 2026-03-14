@@ -10,6 +10,7 @@ export type Product = {
     vademecum?: string;
     price: number;
     category: string;
+    imageUrl?: string;
 };
 
 export type CartItem = Product & {
@@ -36,6 +37,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
 
+    const [isLoaded, setIsLoaded] = useState(false);
+
     // Load from local storage on mount (optional, keeping it in memory for demo but this makes it robust)
     useEffect(() => {
         const savedCart = localStorage.getItem('gruinfacol_cart');
@@ -46,11 +49,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 console.error("Error parsing cart data");
             }
         }
+        setIsLoaded(true);
     }, []);
 
     useEffect(() => {
-        localStorage.setItem('gruinfacol_cart', JSON.stringify(items));
-    }, [items]);
+        if (isLoaded) {
+            localStorage.setItem('gruinfacol_cart', JSON.stringify(items));
+        }
+    }, [items, isLoaded]);
 
     const addToCart = (product: Product, quantityToAdd: number = 1) => {
         setItems((prev) => {

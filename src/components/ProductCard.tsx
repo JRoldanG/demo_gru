@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useCart, Product } from '@/context/CartContext';
 import { Check, ShoppingCart, Info } from 'lucide-react';
+import Link from 'next/link';
 
 interface ProductCardProps {
     product: Product;
@@ -15,7 +16,6 @@ interface ProductCardProps {
 export default function ProductCard({ product, icon, colSpanClass, imageUrl, showCartAndPrice = true }: ProductCardProps) {
     const { addToCart, getDiscountedPrice } = useCart();
     const [isAdded, setIsAdded] = useState(false);
-    const [isHovered, setIsHovered] = useState(false);
     const [quantity, setQuantity] = useState<number>(1);
 
     const handleAdd = () => {
@@ -43,132 +43,109 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
     return (
         <div
             className={`glass-panel product-card ${colSpanClass} ${!imageUrl ? 'no-image' : ''}`}
-            style={{ ...cardStyle, position: 'relative', overflow: 'hidden', transform: 'none' }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            style={{ ...cardStyle, position: 'relative', overflow: 'hidden', transform: 'translateY(0)', transition: 'box-shadow 0.3s ease', display: 'flex', flexDirection: 'column', minHeight: '320px', padding: 0, backgroundSize: '80%', backgroundPosition: 'center -50px' }}
         >
-            {/* Vademecum Overlay (appears on hover) */}
-            {product.vademecum && (
-                <div
-                    className="vademecum-overlay"
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: 'rgba(15, 76, 129, 0.98)',
-                        backdropFilter: 'blur(8px)',
-                        color: 'white',
-                        padding: 'var(--space-lg)',
-                        paddingTop: 'calc(var(--space-lg) + 60px)',
-                        zIndex: 10,
-                        opacity: isHovered ? 1 : 0,
-                        visibility: isHovered ? 'visible' : 'hidden',
-                        transition: 'opacity 0.3s ease, visibility 0.3s ease',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflowY: 'auto',
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: 'var(--accent-teal) transparent'
-                    }}
-                >
-                    <h4 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--accent-cyan)', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '0.5rem' }}>
-                        Detalles Especializados
-                    </h4>
-                    <p style={{ fontSize: '0.9rem', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                        {product.vademecum}
-                    </p>
-                </div>
-            )}
+            <div style={{ flexGrow: 1, minHeight: '180px' }}></div>
 
-            <div className="product-card-header" style={{ position: 'relative', zIndex: 11 }}>
-                {product.vademecum && (
-                    <div
-                        className="product-icon-wrapper"
-                        style={{
-                            display: 'flex',
-                            gap: '0.2rem',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: 'auto',
-                            padding: '0 0.5rem',
-                            height: '28px',
-                            backgroundColor: 'white',
-                            borderRadius: '14px',
-                            border: '1px solid var(--glass-border)',
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
-                        }}
-                    >
-                        <Info size={14} style={{ color: 'var(--trust-blue)' }} />
-                        <span style={{ color: 'var(--trust-blue)', fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Detalle</span>
-                    </div>
-                )}
+            <div
+                className="product-info-bottom"
+                style={{
+                    position: 'relative',
+                    zIndex: 2,
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 60%, transparent 100%)',
+                    padding: 'var(--space-md)',
+                    paddingTop: '3rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem'
+                }}
+            >
                 {showCartAndPrice && (
                     <div
                         className="product-price"
                         style={{
-                            opacity: isHovered && product.vademecum ? 0 : 1,
-                            visibility: isHovered && product.vademecum ? 'hidden' : 'visible',
-                            transition: 'opacity 0.3s ease, visibility 0.3s ease'
+                            alignSelf: 'flex-start',
+                            padding: '0.25rem 0.75rem',
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            backdropFilter: 'blur(10px)',
+                            borderRadius: 'var(--radius-full)',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            fontSize: '1.25rem',
+                            marginBottom: '0.25rem'
                         }}
                     >
                         {formattedPrice}
                     </div>
                 )}
-            </div>
 
-            <div
-                className="product-info"
-                style={{
-                    position: 'relative',
-                    zIndex: 2,
-                    opacity: isHovered && product.vademecum ? 0 : 1,
-                    transition: 'opacity 0.3s ease'
-                }}
-            >
-                <p style={{ fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "0.5rem" }}>
-                    {product.category}
-                </p>
-                <h3>{product.name}</h3>
-                <p>{product.description}</p>
-            </div>
-
-            {showCartAndPrice && (
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', position: 'relative', zIndex: 11 }}>
-                    <input
-                        type="number"
-                        min="1"
-                        value={quantity}
-                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                        style={{
-                            width: '80px',
-                            padding: '0.5rem',
-                            borderRadius: 'var(--radius-sm)',
-                            border: '1px solid var(--glass-border)',
-                            outline: 'none',
-                            textAlign: 'center',
-                            fontWeight: 600,
-                            backgroundColor: 'white'
-                        }}
-                    />
-                    <button
-                        className={`button-add-cart ${isAdded ? 'added' : ''}`}
-                        onClick={handleAdd}
-                        style={{ flex: 1 }}
-                    >
-                        {isAdded ? (
-                            <>
-                                <Check size={18} /> Agregado
-                            </>
-                        ) : (
-                            <>
-                                <ShoppingCart size={18} /> Agregar
-                            </>
-                        )}
-                    </button>
+                <div>
+                    <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{product.name}</h3>
                 </div>
-            )}
+
+                {showCartAndPrice && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>
+                            <input
+                                type="number"
+                                min="1"
+                                value={quantity}
+                                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                                style={{
+                                    width: '60px',
+                                    padding: '0.5rem',
+                                    borderRadius: 'var(--radius-sm)',
+                                    border: '1px solid var(--glass-border)',
+                                    outline: 'none',
+                                    textAlign: 'center',
+                                    fontWeight: 600,
+                                    backgroundColor: 'white',
+                                    color: 'var(--text-primary)'
+                                }}
+                            />
+                            <button
+                                className={`button-add-cart ${isAdded ? 'added' : ''}`}
+                                onClick={handleAdd}
+                                style={{ flex: '1 1 auto', padding: '0.4rem', fontSize: '0.9rem', minWidth: '100px' }}
+                            >
+                                {isAdded ? (
+                                    <>
+                                        <Check size={16} /> Listo
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShoppingCart size={16} /> Añadir
+                                    </>
+                                )}
+                            </button>
+                            <Link href={`/products/${product.id}`} passHref style={{ display: 'flex', flex: '0 0 auto' }}>
+                                <button
+                                    onClick={() => {
+                                        if (typeof window !== 'undefined') {
+                                            sessionStorage.setItem('products_scroll_pos', window.scrollY.toString());
+                                        }
+                                    }}
+                                    className="button-primary"
+                                    style={{
+                                        width: 'auto',
+                                        padding: '0.4rem 0.6rem',
+                                        display: 'flex',
+                                        gap: '0.4rem',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        border: 'none',
+                                        borderRadius: 'var(--radius-sm)',
+                                        fontSize: '0.85rem'
+                                    }}
+                                    title="Ver detalle"
+                                >
+                                    <Info size={16} /> Detalle
+                                </button>
+                            </Link>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
