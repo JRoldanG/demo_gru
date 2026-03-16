@@ -19,7 +19,7 @@ function Navbar() {
           <img src="/logo.png" alt="Gruinfacol S.A. Logo" />
         </div>
         <div className="nav-actions">
-          <Link href="/" style={{ fontSize: "0.95rem", fontWeight: 500, color: "var(--text-secondary)", transition: "color 0.2s" }} onMouseOver={(e: any) => e.currentTarget.style.color = "var(--trust-blue)"} onMouseOut={(e: any) => e.currentTarget.style.color = "var(--text-secondary)"}>Líneas de Especialidad</Link>
+          <Link href="/" style={{ fontSize: "0.95rem", fontWeight: 500, color: "var(--text-secondary)", transition: "color 0.2s" }} onMouseOver={(e: any) => e.currentTarget.style.color = "var(--trust-blue)"} onMouseOut={(e: any) => e.currentTarget.style.color = "var(--text-secondary)"}>Inicio</Link>
           <Link href="/products" style={{ fontSize: "0.95rem", fontWeight: 500, color: "var(--text-secondary)", transition: "color 0.2s" }} onMouseOver={(e: any) => e.currentTarget.style.color = "var(--trust-blue)"} onMouseOut={(e: any) => e.currentTarget.style.color = "var(--text-secondary)"}>Productos</Link>
 
           {isInitializing ? (

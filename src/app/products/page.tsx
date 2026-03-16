@@ -145,10 +145,7 @@ export default function ProductsPage() {
                         Catálogo de <span className="text-gradient-primary">Productos</span>
                     </h1>
                     <p className="text-sub" style={{ margin: 'var(--space-lg) auto', color: "var(--text-primary)", fontSize: "1.1rem", maxWidth: "100%" }}>
-                        {isAuthenticated
-                            ? <>Explora nuestra selecta gama de medicamentos y productos de investigación farmacéutica. Lista de precios asignada: <strong>{user?.priceTier?.replace('_', ' ')}</strong>.</>
-                            : <>Explora nuestra selecta gama de medicamentos y productos de investigación farmacéutica.</>
-                        }
+                        Explora nuestra selecta gama de medicamentos y productos de investigación farmacéutica.
                     </p>
                 </div>
             </section>

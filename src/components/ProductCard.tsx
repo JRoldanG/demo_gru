@@ -43,7 +43,7 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
     return (
         <div
             className={`glass-panel product-card ${colSpanClass} ${!imageUrl ? 'no-image' : ''}`}
-            style={{ ...cardStyle, position: 'relative', overflow: 'hidden', transform: 'translateY(0)', transition: 'box-shadow 0.3s ease', display: 'flex', flexDirection: 'column', minHeight: '320px', padding: 0, backgroundSize: '72%', backgroundPosition: 'center -70px' }}
+            style={{ ...cardStyle, position: 'relative', overflow: 'hidden', transform: 'translateY(0)', transition: 'box-shadow 0.3s ease', display: 'flex', flexDirection: 'column', minHeight: '320px', padding: 0, backgroundSize: '85%', backgroundPosition: 'center 15%', backgroundRepeat: 'no-repeat' }}
         >
             <div style={{ flexGrow: 1, minHeight: '180px' }}></div>
 
