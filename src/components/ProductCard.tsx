@@ -10,10 +10,11 @@ interface ProductCardProps {
     icon: React.ReactNode;
     colSpanClass: string;
     imageUrl?: string;
+    imageUrls?: string[];
     showCartAndPrice?: boolean;
 }
 
-export default function ProductCard({ product, icon, colSpanClass, imageUrl, showCartAndPrice = true }: ProductCardProps) {
+export default function ProductCard({ product, icon, colSpanClass, imageUrl, imageUrls, showCartAndPrice = true }: ProductCardProps) {
     const { addToCart, getDiscountedPrice } = useCart();
     const [isAdded, setIsAdded] = useState(false);
     const [quantity, setQuantity] = useState<number>(1);
@@ -39,12 +40,34 @@ export default function ProductCard({ product, icon, colSpanClass, imageUrl, sho
     }).format(finalPrice);
 
     const cardStyle = imageUrl ? { backgroundImage: `url(${imageUrl})` } : {};
+    const hasPictures = imageUrl || (imageUrls && imageUrls.length > 0);
 
     return (
         <div
-            className={`glass-panel product-card ${colSpanClass} ${!imageUrl ? 'no-image' : ''}`}
+            className={`glass-panel product-card ${colSpanClass} ${!hasPictures ? 'no-image' : ''}`}
             style={{ ...cardStyle, position: 'relative', overflow: 'hidden', transform: 'translateY(0)', transition: 'box-shadow 0.3s ease', display: 'flex', flexDirection: 'column', minHeight: '320px', padding: 0, backgroundSize: '85%', backgroundPosition: 'center 15%', backgroundRepeat: 'no-repeat' }}
         >
+            {imageUrls && imageUrls.length > 0 && (
+                <div style={{ position: 'absolute', top: '10%', left: 0, right: 0, height: '55%', zIndex: 1, display: 'flex', justifyContent: 'center', alignItems: 'flex-end', pointerEvents: 'none' }}>
+                    {imageUrls.map((url, idx) => {
+                       const size = imageUrls.length === 1 ? '160px' : (130 - idx * 15) + 'px';
+                       const isCenter = idx === 0;
+                       return (
+                        <div key={idx} style={{ 
+                            width: size,
+                            height: size,
+                            position: 'relative',
+                            zIndex: 10 - idx,
+                            marginLeft: idx > 0 ? (imageUrls.length > 2 ? '-40px' : '-20px') : '0',
+                            transform: `translateY(${isCenter ? '0' : '15px'})`,
+                            filter: 'drop-shadow(0px 10px 15px rgba(0,0,0,0.25))'
+                        }}>
+                            <img src={url} alt={`Composición ${product.name}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                        </div>
+                       )
+                    })}
+                </div>
+            )}
             <div style={{ flexGrow: 1, minHeight: '180px' }}></div>
 
             <div
